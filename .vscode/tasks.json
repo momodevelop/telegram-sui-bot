@@ -1,0 +1,67 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "0_init",
+            "type": "shell",
+            "command": "make init"
+        },
+        {
+            "label": "1_uninit",
+            "type": "shell",
+            "command": "make uninit"
+        },
+        {
+            "label": "2_get",
+            "type": "shell",
+            "command": "make get"
+        },
+        {
+            "label": "3_clean",
+            "type": "shell",
+            "command": "make clean"
+        },
+        {
+            "label": "4_build",
+            "type": "shell",
+            "command": "make build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {y
+            
+            "label": "5_pack-pi",
+            "type": "shell",
+            "command": "make pack-pi"
+        },
+        {
+            "label": "6_deploy-pi",
+            "type": "shell",
+            "command": "make deploy-pi"
+        },
+        {
+            "label": "7_start-pi",
+            "type": "shell",
+            "command": "make start-pi"
+        },
+        {
+            "label": "8_stop-pi",
+            "type": "shell",
+            "command": "make stop-pi"
+        },
+        {
+            "label": "z_all",
+            "type": "shell",
+            "command": "make all"
+        },
+        {
+            "label": "z_all-pi",
+            "type": "shell",
+            "command": "make all-pi"
+        }
+    ]
+}
