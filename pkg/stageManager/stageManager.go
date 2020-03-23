@@ -3,7 +3,7 @@ package stageManager
 import (
 	"log"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 type Session struct {
@@ -11,11 +11,10 @@ type Session struct {
 }
 type IStage interface {
 	Name() string
-	Greet(session *Session, bot *tgbotapi.BotAPI, update *tgbotapi.Update)
-	Process(session *Session, bot *tgbotapi.BotAPI, update *tgbotapi.Update)
+	Greet(session *Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
+	Process(session *Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) (bool, string)
 }
 
-type user_t int
 type Manager struct {
 	sessions map[int]*Session
 	stages   map[string]IStage
@@ -36,14 +35,17 @@ func (this *Manager) Add(stages ...IStage) {
 
 }
 
-func (this *Manager) Process(userID int, bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
-	// Check if session exists
-	session, ok := this.sessions[userID]
-	if !ok {
-		this.sessions[userID] = &Session{Stage: "Main"}
-		session, ok = this.sessions[userID]
+func (this *Manager) Process(api *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+	user := update.Message.From
+
+	// Check if session exists. If it does not, create new session
+	session, oldUser := this.sessions[user.ID]
+	if !oldUser {
+		var ok bool
+		this.sessions[user.ID] = &Session{Stage: "Main"}
+		session, ok = this.sessions[user.ID]
 		if !ok {
-			log.Panicf("Cannot create session for %d", userID)
+			log.Panicf("Cannot create session for %d", user.ID)
 		}
 	}
 
@@ -52,5 +54,19 @@ func (this *Manager) Process(userID int, bot *tgbotapi.BotAPI, update *tgbotapi.
 	if !ok {
 		log.Panicf("Invalid stage: %s", session.Stage)
 	}
-	stage.Process(session, bot, update)
+	if !oldUser {
+		stage.Greet(session, api, update)
+	} else {
+		isChangeStage, stageToChangeStr := stage.Process(session, api, update)
+		if isChangeStage {
+			stageToChange, ok := this.stages[stageToChangeStr]
+			if !ok {
+				log.Panicf("Invalid stage to change: %s", session.Stage)
+			}
+			session.Stage = stageToChange.Name()
+			stageToChange.Greet(session, api, update)
+		}
+
+	}
+
 }

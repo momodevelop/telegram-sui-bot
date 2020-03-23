@@ -5,10 +5,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	stgmgr "telegram_go_sui_bot/pkg/stageManager"
+	"telegram_go_sui_bot/pkg/stageManager"
 	"telegram_go_sui_bot/pkg/stages"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"telegram_go_sui_bot/pkg/telegramBot"
 )
 
 type config_t map[string]string
@@ -37,32 +36,17 @@ func initConfig() config_t {
 
 func main() {
 	config := initConfig()
+	bot := telegramBot.Bot{
+		Token: config["telegramToken"],
+	}
 
 	// stage init
-	stageMgr := stgmgr.New()
+	stageMgr := stageManager.New()
 	stageMgr.Add(
 		&stages.StageMain{},
 		&stages.StageBus{},
 	)
+	bot.AddMiddleware(stageMgr)
+	bot.Run()
 
-	bot, err := tgbotapi.NewBotAPI(config["telegramToken"])
-	if err != nil {
-		log.Panic(err)
-	}
-	bot.Debug = false
-	log.Printf("Authorized on account %s", bot.Self.UserName)
-
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-	updates, err := bot.GetUpdatesChan(u)
-
-	for update := range updates {
-		user := update.Message.From
-
-		if update.Message == nil { // ignore any non-Message Updates
-			return
-		}
-		log.Printf("Message is from %d", user.ID)
-		stageMgr.Process(user.ID, bot, &update)
-	}
 }
