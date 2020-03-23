@@ -11,8 +11,8 @@ type Session struct {
 }
 type IStage interface {
 	Name() string
-	Greet(session *Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
-	Process(session *Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) (bool, string)
+	Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
+	Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) (bool, string)
 }
 
 type Manager struct {
@@ -35,7 +35,7 @@ func (this *Manager) Add(stages ...IStage) {
 
 }
 
-func (this *Manager) Process(api *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
 	user := update.Message.From
 
 	// Check if session exists. If it does not, create new session
@@ -55,16 +55,16 @@ func (this *Manager) Process(api *TelegramAPI.BotAPI, update *TelegramAPI.Update
 		log.Panicf("Invalid stage: %s", session.Stage)
 	}
 	if !oldUser {
-		stage.Greet(session, api, update)
+		stage.Greet(bot, update)
 	} else {
-		isChangeStage, stageToChangeStr := stage.Process(session, api, update)
+		isChangeStage, stageToChangeStr := stage.Process(bot, update)
 		if isChangeStage {
 			stageToChange, ok := this.stages[stageToChangeStr]
 			if !ok {
 				log.Panicf("Invalid stage to change: %s", session.Stage)
 			}
 			session.Stage = stageToChange.Name()
-			stageToChange.Greet(session, api, update)
+			stageToChange.Greet(bot, update)
 		}
 
 	}

@@ -43,8 +43,8 @@ func main() {
 	// stage init
 	stageMgr := stageManager.New()
 	stageMgr.Add(
-		&stages.StageMain{},
-		&stages.StageBus{},
+		stages.NewStageMain(),
+		stages.NewStageBus(),
 	)
 	bot.AddMiddleware(stageMgr)
 	bot.Run()
