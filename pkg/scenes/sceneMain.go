@@ -1,4 +1,4 @@
-package stages
+package scenes
 
 import (
 	"fmt"
@@ -7,24 +7,24 @@ import (
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-type StageMain struct{}
+type SceneMain struct{}
 
-func NewStageMain() *StageMain {
-	return &StageMain{}
+func NewSceneMain() *SceneMain {
+	return &SceneMain{}
 }
 
-func (obj *StageMain) Name() string {
+func (obj *SceneMain) Name() string {
 	return "Main"
 }
 
-func (obj *StageMain) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+func (obj *SceneMain) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
 	message := "Erm...Hi? I'm Tachibana Sui, your humble...er...bot.\nI can help you do a few things, just give me one of the commands:\n---\n/bus to get bus ETA\n/food if you want me to help you decide what to eat"
 	msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
 	msg.ReplyMarkup = obj.getKeyboard()
 	bot.Send(msg)
 }
 
-func (obj *StageMain) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) (bool, string) {
+func (obj *SceneMain) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) (bool, string) {
 	switch update.Message.Text {
 	case "/bus":
 		return true, "Bus"
@@ -39,7 +39,7 @@ func (obj *StageMain) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Updat
 	return false, ""
 }
 
-func (obj *StageMain) getKeyboard() TelegramAPI.ReplyKeyboardMarkup {
+func (obj *SceneMain) getKeyboard() TelegramAPI.ReplyKeyboardMarkup {
 	return TelegramAPI.NewReplyKeyboard(
 		TelegramAPI.NewKeyboardButtonRow(
 			TelegramAPI.NewKeyboardButton("/bus"),

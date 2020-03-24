@@ -9,7 +9,7 @@ import (
 type Session struct {
 	Stage string
 }
-type IStage interface {
+type IScene interface {
 	Name() string
 	Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
 	Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) (bool, string)
@@ -17,17 +17,17 @@ type IStage interface {
 
 type Manager struct {
 	sessions map[int]*Session
-	stages   map[string]IStage
+	stages   map[string]IScene
 }
 
 func New() *Manager {
 	return &Manager{
 		sessions: make(map[int]*Session),
-		stages:   make(map[string]IStage),
+		stages:   make(map[string]IScene),
 	}
 }
 
-func (this *Manager) Add(stages ...IStage) {
+func (this *Manager) Add(stages ...IScene) {
 	for _, stage := range stages {
 		log.Println("Adding Stage: " + stage.Name())
 		this.stages[stage.Name()] = stage
