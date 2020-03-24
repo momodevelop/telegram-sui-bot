@@ -1,7 +1,7 @@
 package scenes
 
 import (
-	LtaAPI "telegram_go_sui_bot/pkg/landTransportDatamallAPI"
+	LtaAPI "telegram_go_sui_bot/pkg/lta"
 
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -12,7 +12,7 @@ type SceneBus struct {
 
 func NewSceneBus(landTransportDataMallToken string) *SceneBus {
 	return &SceneBus{
-		busAPI: LtaAPI.NewAPI(landTransportDataMallToken),
+		busAPI: LtaAPI.New(landTransportDataMallToken),
 	}
 }
 

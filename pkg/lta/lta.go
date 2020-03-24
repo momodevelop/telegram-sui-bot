@@ -1,4 +1,4 @@
-package lta-api
+package lta
 
 type API struct {
 	Token string

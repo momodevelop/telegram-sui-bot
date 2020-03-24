@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"telegram_go_sui_bot/pkg/scenes"
 	"telegram_go_sui_bot/pkg/telegramBot"
 )
 
