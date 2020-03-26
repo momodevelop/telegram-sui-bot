@@ -3,6 +3,7 @@ package scenes
 import (
 	"fmt"
 	"math/rand"
+	Director "telegram_go_sui_bot/pkg/director"
 
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -24,10 +25,11 @@ func (obj *SceneMain) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
 	bot.Send(msg)
 }
 
-func (obj *SceneMain) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) (bool, string) {
+func (obj *SceneMain) Process(session *Director.Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
 	switch update.Message.Text {
 	case "/bus":
-		return true, "Bus"
+		session.ChangeScene("Bus")
+		return
 	case "/food":
 		msg := TelegramAPI.NewMessage(update.Message.Chat.ID, fmt.Sprintf("You should have *%s*!", getRandomFoodRecommandation()))
 		msg.ParseMode = "markdown"
@@ -36,7 +38,6 @@ func (obj *SceneMain) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Updat
 	default:
 		obj.Greet(bot, update)
 	}
-	return false, ""
 }
 
 func (obj *SceneMain) getKeyboard() TelegramAPI.ReplyKeyboardMarkup {

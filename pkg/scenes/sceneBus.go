@@ -1,6 +1,7 @@
 package scenes
 
 import (
+	Director "telegram_go_sui_bot/pkg/director"
 	LtaAPI "telegram_go_sui_bot/pkg/lta"
 
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -25,12 +26,11 @@ func (obj *SceneBus) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) 
 	bot.Send(msg)
 }
 
-func (obj *SceneBus) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) (bool, string) {
+func (obj *SceneBus) Process(session *Director.Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
 
 	msg := TelegramAPI.NewMessage(update.Message.Chat.ID, "Bus!")
 	msg.ReplyToMessageID = update.Message.MessageID
 
 	bot.Send(msg)
 
-	return false, ""
 }

@@ -6,18 +6,10 @@ import (
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-type Session struct {
-	Scene string
-}
-type IScene interface {
-	Name() string
-	Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
-	Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) (bool, string)
-}
-
 type Manager struct {
-	sessions map[int]*Session
-	scenes   map[string]IScene
+	sessions         map[int]*Session
+	scenes           map[string]IScene
+	defaultSceneName string
 }
 
 func New() *Manager {
@@ -27,22 +19,33 @@ func New() *Manager {
 	}
 }
 
+func (this *Manager) SetDefaultScene(sceneName string) {
+	_, ok := this.scenes[sceneName]
+	if !ok {
+		log.Panicf("Scene does not exist: %s", sceneName)
+	}
+	this.defaultSceneName = sceneName
+}
+
 func (this *Manager) Add(scenes ...IScene) {
-	for _, Scene := range scenes {
-		log.Println("Adding Scene: " + Scene.Name())
-		this.scenes[Scene.Name()] = Scene
+	for _, scene := range scenes {
+		log.Println("Adding Scene: " + scene.Name())
+		this.scenes[scene.Name()] = scene
 	}
 
 }
 
 func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+	if len(this.defaultSceneName) == 0 {
+		log.Panicf("Default scene does not exist! Please set with SetDefaultScene()")
+	}
 	user := update.Message.From
 
 	// Check if session exists. If it does not, create new session
 	session, oldUser := this.sessions[user.ID]
 	if !oldUser {
 		var ok bool
-		this.sessions[user.ID] = &Session{Scene: "Main"}
+		this.sessions[user.ID] = &Session{scene: this.defaultSceneName}
 		session, ok = this.sessions[user.ID]
 		if !ok {
 			log.Panicf("Cannot create session for %d", user.ID)
@@ -50,21 +53,21 @@ func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update
 	}
 
 	// redirect based on session
-	Scene, ok := this.scenes[session.Scene]
+	scene, ok := this.scenes[session.scene]
 	if !ok {
-		log.Panicf("Invalid Scene: %s", session.Scene)
+		log.Panicf("Invalid Scene: %s", session.scene)
 	}
 	if !oldUser {
-		Scene.Greet(bot, update)
+		scene.Greet(bot, update)
 	} else {
-		isChangeScene, SceneToChangeStr := Scene.Process(bot, update)
-		if isChangeScene {
-			SceneToChange, ok := this.scenes[SceneToChangeStr]
+		scene.Process(session, bot, update)
+		if session.hasChanged {
+			sceneToChange, ok := this.scenes[session.scene]
 			if !ok {
-				log.Panicf("Invalid Scene to change: %s", session.Scene)
+				log.Panicf("Invalid Scene to change: %s", session.scene)
 			}
-			session.Scene = SceneToChange.Name()
-			SceneToChange.Greet(bot, update)
+			session.scene = sceneToChange.Name()
+			sceneToChange.Greet(bot, update)
 		}
 
 	}

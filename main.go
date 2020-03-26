@@ -46,6 +46,7 @@ func main() {
 		scenes.NewSceneMain(),
 		scenes.NewSceneBus(config["ltaToken"]),
 	)
+	director.SetDefaultScene("Main")
 	bot.AddMiddleware(director)
 	bot.Run()
 
