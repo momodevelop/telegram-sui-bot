@@ -66,7 +66,7 @@ func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update
 			if !ok {
 				log.Panicf("Invalid Scene to change: %s", session.scene)
 			}
-			session.scene = sceneToChange.Name()
+			session.hasChanged = false
 			sceneToChange.Greet(bot, update)
 		}
 
