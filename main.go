@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"telegram_go_sui_bot/pkg/director"
 	"telegram_go_sui_bot/pkg/scenes"
 	"telegram_go_sui_bot/pkg/telegramBot"
 )
@@ -42,8 +43,8 @@ func main() {
 	// stage init
 	director := director.New()
 	director.Add(
-		scenes.NewStageMain(),
-		scenes.NewStageBus(config["ltaToken"]),
+		scenes.NewSceneMain(),
+		scenes.NewSceneBus(config["ltaToken"]),
 	)
 	bot.AddMiddleware(director)
 	bot.Run()

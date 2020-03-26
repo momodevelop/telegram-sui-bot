@@ -1,4 +1,4 @@
-package stageManager
+package director
 
 import (
 	"log"
@@ -7,7 +7,7 @@ import (
 )
 
 type Session struct {
-	Stage string
+	Scene string
 }
 type IScene interface {
 	Name() string
@@ -17,20 +17,20 @@ type IScene interface {
 
 type Manager struct {
 	sessions map[int]*Session
-	stages   map[string]IScene
+	scenes   map[string]IScene
 }
 
 func New() *Manager {
 	return &Manager{
 		sessions: make(map[int]*Session),
-		stages:   make(map[string]IScene),
+		scenes:   make(map[string]IScene),
 	}
 }
 
-func (this *Manager) Add(stages ...IScene) {
-	for _, stage := range stages {
-		log.Println("Adding Stage: " + stage.Name())
-		this.stages[stage.Name()] = stage
+func (this *Manager) Add(scenes ...IScene) {
+	for _, Scene := range scenes {
+		log.Println("Adding Scene: " + Scene.Name())
+		this.scenes[Scene.Name()] = Scene
 	}
 
 }
@@ -42,7 +42,7 @@ func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update
 	session, oldUser := this.sessions[user.ID]
 	if !oldUser {
 		var ok bool
-		this.sessions[user.ID] = &Session{Stage: "Main"}
+		this.sessions[user.ID] = &Session{Scene: "Main"}
 		session, ok = this.sessions[user.ID]
 		if !ok {
 			log.Panicf("Cannot create session for %d", user.ID)
@@ -50,21 +50,21 @@ func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update
 	}
 
 	// redirect based on session
-	stage, ok := this.stages[session.Stage]
+	Scene, ok := this.scenes[session.Scene]
 	if !ok {
-		log.Panicf("Invalid stage: %s", session.Stage)
+		log.Panicf("Invalid Scene: %s", session.Scene)
 	}
 	if !oldUser {
-		stage.Greet(bot, update)
+		Scene.Greet(bot, update)
 	} else {
-		isChangeStage, stageToChangeStr := stage.Process(bot, update)
-		if isChangeStage {
-			stageToChange, ok := this.stages[stageToChangeStr]
+		isChangeScene, SceneToChangeStr := Scene.Process(bot, update)
+		if isChangeScene {
+			SceneToChange, ok := this.scenes[SceneToChangeStr]
 			if !ok {
-				log.Panicf("Invalid stage to change: %s", session.Stage)
+				log.Panicf("Invalid Scene to change: %s", session.Scene)
 			}
-			session.Stage = stageToChange.Name()
-			stageToChange.Greet(bot, update)
+			session.Scene = SceneToChange.Name()
+			SceneToChange.Greet(bot, update)
 		}
 
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 type SceneBus struct {
-	busAPI LtaAPI.API
+	busAPI *LtaAPI.API
 }
 
 func NewSceneBus(landTransportDataMallToken string) *SceneBus {
