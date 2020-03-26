@@ -24,6 +24,7 @@ func (this *Manager) SetDefaultScene(sceneName string) {
 	if !ok {
 		log.Panicf("Scene does not exist: %s", sceneName)
 	}
+	log.Println("Default Scene is set to: " + sceneName)
 	this.defaultSceneName = sceneName
 }
 
