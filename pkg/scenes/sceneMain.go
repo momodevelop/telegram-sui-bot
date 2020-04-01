@@ -19,7 +19,7 @@ func (obj *SceneMain) Name() string {
 }
 
 func (obj *SceneMain) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
-	message := "Erm...Hi? I'm Tachibana Sui, your humble...er...bot.\nI can help you do a few things, just give me one of the commands:\n---\n/bus to get bus ETA\n/food if you want me to help you decide what to eat"
+	message := obj.getGreeting()
 	msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
 	msg.ReplyMarkup = obj.getKeyboard()
 	bot.Send(msg)
@@ -31,7 +31,7 @@ func (obj *SceneMain) Process(session *Director.Session, bot *TelegramAPI.BotAPI
 		session.ChangeScene("Bus")
 		return
 	case "/food":
-		msg := TelegramAPI.NewMessage(update.Message.Chat.ID, fmt.Sprintf("You should have *%s*!", getRandomFoodRecommandation()))
+		msg := TelegramAPI.NewMessage(update.Message.Chat.ID, fmt.Sprintf("You should have *%s*!", obj.getRandomFoodRecommandation()))
 		msg.ParseMode = "markdown"
 		msg.ReplyMarkup = obj.getKeyboard()
 		bot.Send(msg)
@@ -48,10 +48,17 @@ func (obj *SceneMain) getKeyboard() TelegramAPI.ReplyKeyboardMarkup {
 		TelegramAPI.NewKeyboardButtonRow(
 			TelegramAPI.NewKeyboardButton("/food"),
 		),
+		TelegramAPI.NewKeyboardButtonRow(
+			TelegramAPI.NewKeyboardButton("/poke"),
+		),
 	)
 }
 
-func getRandomFoodRecommandation() string {
+func (obj *SceneMain) getGreeting() string {
+	return "Erm...Hi? I'm Tachibana Sui, your humble...er...bot.\nI can help you do a few things, just give me one of the commands:\n---\n/bus to get bus ETA\n/food if you want me to help you decide what to eat"
+}
+
+func (obj *SceneMain) getRandomFoodRecommandation() string {
 	recommendations := []string{
 		//general
 		"something with curry",
