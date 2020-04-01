@@ -3,6 +3,7 @@ package scenes
 import (
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	Director "telegram_go_sui_bot/pkg/director"
 	Lta "telegram_go_sui_bot/pkg/lta"
 
@@ -28,7 +29,6 @@ func (obj *SceneBus) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) 
 	resp := obj.busAPI.CallBusArrivalv2("02151", "")
 	body, _ := ioutil.ReadAll(resp.Body)
 	fmt.Print(string(body))
-	recovery(bot, update)
 
 	message := obj.getGreeting()
 	msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
@@ -37,11 +37,33 @@ func (obj *SceneBus) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) 
 }
 
 func (obj *SceneBus) Process(session *Director.Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+	defer recovery(bot, update)
+
 	msg := update.Message.Text
-	if msg == "/exit" {
-		session.ChangeScene("Main")
-		return
+	if len(msg) > 0 {
+		if msg == "/exit" {
+			session.ChangeScene("Main")
+			return
+		}
+
+		rex, err := regexp.Compile(`\d+/i`)
+		errCheck("Regex is problemetic", err)
+
+		matches := rex.FindAllString(msg, 0)
+
+		if len(matches) > 0 {
+			busStop = parseInt(matches[0])
+			//let result: GetBusStopReturn = busAPI.getBusStop(busStop);
+
+			//ctx.reply(result.body, result.object);
+
+			return
+		}
+
+		obj.Greet(bot, update)
+
 	}
+
 }
 
 func (obj *SceneBus) getGreeting() string {
