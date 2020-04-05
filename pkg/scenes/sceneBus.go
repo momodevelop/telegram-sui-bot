@@ -2,8 +2,8 @@ package scenes
 
 import (
 	"fmt"
-	"io/ioutil"
 	"regexp"
+	"strconv"
 	Director "telegram_go_sui_bot/pkg/director"
 	Lta "telegram_go_sui_bot/pkg/lta"
 
@@ -25,10 +25,6 @@ func (obj *SceneBus) Name() string {
 }
 
 func (obj *SceneBus) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
-	//TODO
-	resp := obj.busAPI.CallBusArrivalv2("02151", "")
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Print(string(body))
 
 	message := obj.getGreeting()
 	msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
@@ -52,8 +48,16 @@ func (obj *SceneBus) Process(session *Director.Session, bot *TelegramAPI.BotAPI,
 		matches := rex.FindAllString(msg, 0)
 
 		if len(matches) > 0 {
-			busStop = parseInt(matches[0])
-			//let result: GetBusStopReturn = busAPI.getBusStop(busStop);
+			busStopCode, err := strconv.Atoi(matches[0])
+			if err != nil || len(matches[0]) > 5 {
+				message := "Invalid bus stop code! Try again..."
+				msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
+				bot.Send(msg)
+			}
+			busStopCodeStr := fmt.Sprintf("%05d", busStopCode)
+
+			resp := obj.busAPI.CallBusArrivalv2(busStopCodeStr, "")
+			fmt.Print(resp.BusStopCode)
 
 			//ctx.reply(result.body, result.object);
 

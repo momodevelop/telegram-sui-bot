@@ -1,6 +1,8 @@
 package lta
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -18,24 +20,42 @@ func New(token string) *API {
 	return ret
 }
 
-func (obj *API) CallBusArrivalv2(busStop string, busNumber string) *http.Response {
+func (obj *API) CallBusArrivalv2(busStop string, busNumber string) *BusArrivalv2 {
 	path := "ltaodataservice/BusArrivalv2?BusStopCode=" + busStop
 
 	if busNumber == "" {
 		path += "&ServiceNo=" + busNumber
 	}
 
-	return obj.CallAPI(path)
+	resp := obj.CallAPI(path)
+	body, err := ioutil.ReadAll(resp.Body)
+	errCheck("[CallBusArrivalv2] Converting response body to []byte", err)
+
+	var ret *BusArrivalv2
+	err = json.Unmarshal(body, &ret)
+	errCheck("[CallBusArrivalv2] Something while unmarshalling json", err)
+	return ret
 }
 
-func (obj *API) CallAPI(path string) *http.Response {
+func (this *API) callBusStops(skip int16) {
+	/*path := "/ltaodataservice/BusStops"
+	if skip >= 0 {
+		path += "?$skip=" + skip
+	}
+
+	resp := this.callAPI(path)
+	resp.Body*/
+
+}
+
+func (this *API) CallAPI(path string) *http.Response {
 	fullpath := "http://datamall2.mytransport.sg/" + path
 	req, err := http.NewRequest("GET", fullpath, nil)
 	errCheck("Something wrong with creating a new request", err)
 
-	req.Header.Add("AccountKey", obj.Token)
+	req.Header.Add("AccountKey", this.Token)
 
-	resp, err := obj.client.Do(req)
+	resp, err := this.client.Do(req)
 	errCheck("Something wrong with processing the request", err)
 
 	return resp
