@@ -42,10 +42,10 @@ func (obj *SceneBus) Process(session *Director.Session, bot *TelegramAPI.BotAPI,
 			return
 		}
 
-		rex, err := regexp.Compile(`\d+/i`)
+		rex, err := regexp.Compile(`\d+`)
 		errCheck("Regex is problemetic", err)
 
-		matches := rex.FindAllString(msg, 0)
+		matches := rex.FindAllString(msg, -1)
 
 		if len(matches) > 0 {
 			busStopCode, err := strconv.Atoi(matches[0])
@@ -55,9 +55,16 @@ func (obj *SceneBus) Process(session *Director.Session, bot *TelegramAPI.BotAPI,
 				bot.Send(msg)
 			}
 			busStopCodeStr := fmt.Sprintf("%05d", busStopCode)
+			// TODO: Should check if the bus stop even exists
 
 			resp := obj.busAPI.CallBusArrivalv2(busStopCodeStr, "")
-			fmt.Print(resp.BusStopCode)
+			if len(resp.Services) == 0 {
+				message := "There are no more buses coming...Maybe you should hail the cab? ^^a"
+				msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
+				bot.Send(msg)
+			} else {
+
+			}
 
 			//ctx.reply(result.body, result.object);
 

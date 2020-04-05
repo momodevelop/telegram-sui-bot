@@ -1,5 +1,17 @@
 package lta
 
+type BusStopsValue struct {
+	BusStopCode string  `json:"BusStopCode"`
+	RoadName    string  `json:"RoadName"`
+	Description string  `json:"Description"`
+	Latitude    float32 `json:"Latitude"`
+	Longitude   float32 `json:"Longitude"`
+}
+
+type BusStops struct {
+	Value []BusStopsValue `json:"value"`
+}
+
 type BusArrivalv2Bus struct {
 	OriginCode       string `json:"OriginCode"`
 	DestinationCode  string `json:"DestinationCode"`

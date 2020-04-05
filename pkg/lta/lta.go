@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 type API struct {
@@ -20,32 +21,39 @@ func New(token string) *API {
 	return ret
 }
 
-func (obj *API) CallBusArrivalv2(busStop string, busNumber string) *BusArrivalv2 {
+func (this *API) CallBusArrivalv2(busStop string, busNumber string) *BusArrivalv2 {
 	path := "ltaodataservice/BusArrivalv2?BusStopCode=" + busStop
 
 	if busNumber == "" {
 		path += "&ServiceNo=" + busNumber
 	}
 
-	resp := obj.CallAPI(path)
-	body, err := ioutil.ReadAll(resp.Body)
-	errCheck("[CallBusArrivalv2] Converting response body to []byte", err)
-
 	var ret *BusArrivalv2
-	err = json.Unmarshal(body, &ret)
-	errCheck("[CallBusArrivalv2] Something while unmarshalling json", err)
+	err := this.CallAPI2JSON(path, &ret)
+	errCheck("[CallBusArrivalv2] Something went wrong", err)
+
 	return ret
 }
 
-func (this *API) callBusStops(skip int16) {
-	/*path := "/ltaodataservice/BusStops"
+func (this *API) CallBusStops(skip int) *BusStops {
+	path := "/ltaodataservice/BusStops"
 	if skip >= 0 {
-		path += "?$skip=" + skip
+		path += "?$skip=" + strconv.Itoa(skip)
 	}
 
-	resp := this.callAPI(path)
-	resp.Body*/
+	var ret *BusStops
+	err := this.CallAPI2JSON(path, &ret)
+	errCheck("[CallBusArrivalv2] Something went wrong", err)
 
+	return ret
+}
+
+func (this *API) CallAPI2JSON(path string, v interface{}) error {
+	resp := this.CallAPI(path)
+	body, err := ioutil.ReadAll(resp.Body)
+	errCheck("[CallAPI2JSON] Error converting response body to []byte", err)
+
+	return json.Unmarshal(body, &v)
 }
 
 func (this *API) CallAPI(path string) *http.Response {
