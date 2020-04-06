@@ -22,15 +22,15 @@ func New() *Manager {
 func (this *Manager) SetDefaultScene(sceneName string) {
 	_, ok := this.scenes[sceneName]
 	if !ok {
-		log.Panicf("Scene does not exist: %s", sceneName)
+		log.Panicf("[Director][SetDefaultScene] Scene does not exist: %s", sceneName)
 	}
-	log.Println("Default Scene is set to: " + sceneName)
+	log.Println("[Director][SetDefaultScene] Default Scene is set to: " + sceneName)
 	this.defaultSceneName = sceneName
 }
 
 func (this *Manager) Add(scenes ...IScene) {
 	for _, scene := range scenes {
-		log.Println("Adding Scene: " + scene.Name())
+		log.Println("[Director][Add] Adding Scene: " + scene.Name())
 		this.scenes[scene.Name()] = scene
 	}
 
