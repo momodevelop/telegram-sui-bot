@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	Director "telegram_go_sui_bot/pkg/director"
+	"telegram_go_sui_bot/pkg/lta"
 	Lta "telegram_go_sui_bot/pkg/lta"
 
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -14,9 +15,9 @@ type SceneBus struct {
 	busAPI *Lta.API
 }
 
-func NewSceneBus(ltaToken string) *SceneBus {
+func NewSceneBus(busAPI *lta.API) *SceneBus {
 	return &SceneBus{
-		busAPI: Lta.New(ltaToken),
+		busAPI: busAPI,
 	}
 }
 

@@ -5,16 +5,18 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"telegram_go_sui_bot/pkg/database"
 	"telegram_go_sui_bot/pkg/director"
+	"telegram_go_sui_bot/pkg/lta"
 	"telegram_go_sui_bot/pkg/scenes"
 	"telegram_go_sui_bot/pkg/telegramBot"
 )
 
-type config_t map[string]string
+type Config map[string]string
 
-func initConfig() config_t {
+func initConfig() Config {
 	log.Println("Initializing config...")
-	var config config_t
+	var config Config
 	ex, err := os.Executable()
 	if err != nil {
 		log.Panic(err)
@@ -34,20 +36,50 @@ func initConfig() config_t {
 	return config
 }
 
+func syncBusStopsFromApiToDb(lta *lta.API, db *database.Database) {
+	log.Println("[syncBusStopsFromApiToDb] Retrieving bus stops from API!")
+	db.ResetBusStopTable()
+	/*for {
+		skip := 0
+		totalStops := 0
+		busStopResponse := lta.CallBusStops(skip)
+		if busStopResponse != nil && len(busStopResponse.Value) > 0 {
+			log.Printf("[syncBusStopsFromApiToDb] %d entries\n")
+			totalStops += len(busStopResponse.Value)
+			skip += 500
+
+			for i := range busStopResponse.Value {
+				var table database.BusStopsValue
+				table.
+
+				busStops.insert()
+			}
+		} else {
+			break
+		}
+	}*/
+}
+
 func main() {
 	config := initConfig()
+	db := database.New("database.db")
+	lta := lta.New(config["ltaToken"])
+
 	bot := telegramBot.Bot{
 		Token: config["telegramToken"],
 	}
+
+	syncBusStopsFromApiToDb(lta, db)
 
 	// stage init
 	director := director.New()
 	director.Add(
 		scenes.NewSceneMain(),
-		scenes.NewSceneBus(config["ltaToken"]),
+		scenes.NewSceneBus(lta),
 	)
 	director.SetDefaultScene("Main")
 	bot.AddMiddleware(director)
 	bot.Run()
 
+	log.Println("Exiting")
 }
