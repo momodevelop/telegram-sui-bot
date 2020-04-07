@@ -58,6 +58,8 @@ func (this *API) CallAPI2JSON(path string, v interface{}) error {
 
 func (this *API) CallAPI(path string) *http.Response {
 	fullpath := "http://datamall2.mytransport.sg/" + path
+
+	//log.Printf("[API][CallAPI] %s\n", fullpath)
 	req, err := http.NewRequest("GET", fullpath, nil)
 	errCheck("Something wrong with creating a new request", err)
 
