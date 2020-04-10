@@ -1,6 +1,7 @@
 package scenes
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -73,6 +74,7 @@ func (obj *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI,
 			message := obj.createBusETAMessage(busArrival, busStop)
 			msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
 			msg.ParseMode = "markdown"
+			msg.ReplyMarkup = obj.getInlineRefreshKeyboard(busStopCodeStr, time.Now().Nanosecond())
 			bot.Send(msg)
 
 			return
@@ -173,4 +175,27 @@ func (obj *SceneBus) nextBusETA(estimatedTimeArr string) int {
 	}
 
 	return 0
+}
+
+type BusRefreshCallbackData struct {
+	Cmd       string `json:"cmd"`
+	BusStop   string `json:"busStop"`
+	TimeStamp int    `json:"timeStamp"`
+}
+
+func (obj *SceneBus) getInlineRefreshKeyboard(busStop string, timeStamp int) TelegramAPI.InlineKeyboardMarkup {
+
+	bytes, err := json.Marshal(BusRefreshCallbackData{
+		Cmd:       "Refresh",
+		BusStop:   busStop,
+		TimeStamp: timeStamp,
+	})
+	errCheck("[SceneBus][getInlineRefreshKeyboard] Problems converting callback data to string", err)
+
+	return TelegramAPI.NewInlineKeyboardMarkup(
+		TelegramAPI.NewInlineKeyboardRow(
+			TelegramAPI.NewInlineKeyboardButtonData("Refresh", string(bytes)),
+		),
+	)
+
 }

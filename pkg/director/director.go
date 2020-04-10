@@ -40,37 +40,39 @@ func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update
 	if len(this.defaultSceneName) == 0 {
 		log.Panicf("Default scene does not exist! Please set with SetDefaultScene()")
 	}
-	user := update.Message.From
 
-	// Check if session exists. If it does not, create new session
-	session, oldUser := this.sessions[user.ID]
-	if !oldUser {
-		var ok bool
-		this.sessions[user.ID] = &Session{scene: this.defaultSceneName}
-		session, ok = this.sessions[user.ID]
-		if !ok {
-			log.Panicf("Cannot create session for %d", user.ID)
-		}
-	}
+	if update.Message != nil {
+		user := update.Message.From
 
-	// redirect based on session
-	scene, ok := this.scenes[session.scene]
-	if !ok {
-		log.Panicf("Invalid Scene: %s", session.scene)
-	}
-	if !oldUser {
-		scene.Greet(bot, update)
-	} else {
-		scene.Process(session, bot, update)
-		if session.hasChanged {
-			sceneToChange, ok := this.scenes[session.scene]
+		// Check if session exists. If it does not, create new session
+		session, oldUser := this.sessions[user.ID]
+		if !oldUser {
+			var ok bool
+			this.sessions[user.ID] = &Session{scene: this.defaultSceneName}
+			session, ok = this.sessions[user.ID]
 			if !ok {
-				log.Panicf("Invalid Scene to change: %s", session.scene)
+				log.Panicf("Cannot create session for %d", user.ID)
 			}
-			session.hasChanged = false
-			sceneToChange.Greet(bot, update)
 		}
 
-	}
+		// redirect based on session
+		scene, ok := this.scenes[session.scene]
+		if !ok {
+			log.Panicf("Invalid Scene: %s", session.scene)
+		}
+		if !oldUser {
+			scene.Greet(bot, update)
+		} else {
+			scene.Process(session, bot, update)
+			if session.hasChanged {
+				sceneToChange, ok := this.scenes[session.scene]
+				if !ok {
+					log.Panicf("Invalid Scene to change: %s", session.scene)
+				}
+				session.hasChanged = false
+				sceneToChange.Greet(bot, update)
+			}
 
+		}
+	}
 }
