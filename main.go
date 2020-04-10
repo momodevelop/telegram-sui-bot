@@ -84,6 +84,7 @@ func main() {
 		scenes.NewSceneBus(lta, db),
 	)
 	director.SetDefaultScene("Main")
+	bot.AddMiddleware(scenes.NewSceneBusCallbackMiddleware(lta, db))
 	bot.AddMiddleware(director)
 	bot.Run()
 

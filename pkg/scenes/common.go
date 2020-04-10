@@ -23,10 +23,6 @@ func errCheck(msg string, err error) {
 	}
 }
 
-func sendSimpleReply(message string, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
-	bot.Send(TelegramAPI.NewMessage(update.Message.Chat.ID, message))
-}
-
 func padStart(str string, item string, count int) string {
 	padAmount := count - len(str)
 	if padAmount > 0 {
