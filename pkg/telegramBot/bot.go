@@ -7,7 +7,7 @@ import (
 )
 
 type IMiddleware interface {
-	Process(*TelegramAPI.BotAPI, *TelegramAPI.Update)
+	Process(*TelegramAPI.BotAPI, *TelegramAPI.Update) bool
 }
 
 type Bot struct {
@@ -33,7 +33,9 @@ func (this *Bot) Run() {
 
 	for update := range updates {
 		for _, middleware := range this.middlewareList {
-			middleware.Process(bot, &update)
+			if !middleware.Process(bot, &update) {
+				break
+			}
 		}
 	}
 }

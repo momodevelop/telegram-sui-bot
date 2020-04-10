@@ -36,7 +36,7 @@ func (this *Manager) Add(scenes ...IScene) {
 
 }
 
-func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) bool {
 	if len(this.defaultSceneName) == 0 {
 		log.Panicf("Default scene does not exist! Please set with SetDefaultScene()")
 	}
@@ -74,6 +74,9 @@ func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update
 			}
 
 		}
+
 	}
+
+	return true
 
 }

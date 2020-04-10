@@ -209,7 +209,7 @@ func NewSceneBusCallbackMiddleware(busAPI *lta.API, db *database.Database) *Scen
 	}
 }
 
-func (this *SceneBusCallbackMiddleware) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+func (this *SceneBusCallbackMiddleware) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) bool {
 
 	if update.CallbackQuery != nil {
 		defer func(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
@@ -225,7 +225,7 @@ func (this *SceneBusCallbackMiddleware) Process(bot *TelegramAPI.BotAPI, update 
 		var callbackData BusRefreshCallbackData
 		err := json.Unmarshal([]byte(update.CallbackQuery.Data), &callbackData)
 		if err != nil {
-			return
+			return true
 		}
 
 		if callbackData.Cmd == "refresh" {
@@ -236,7 +236,7 @@ func (this *SceneBusCallbackMiddleware) Process(bot *TelegramAPI.BotAPI, update 
 					update.CallbackQuery.Message.MessageID,
 					"That bus stop does not exist!",
 				))
-				return
+				return true
 			}
 
 			busArrival := this.busAPI.CallBusArrivalv2(callbackData.BusStop, "")
@@ -246,7 +246,7 @@ func (this *SceneBusCallbackMiddleware) Process(bot *TelegramAPI.BotAPI, update 
 					update.CallbackQuery.Message.MessageID,
 					"There are no more buses coming...Maybe you should hail the cab? ^^a",
 				))
-				return
+				return true
 			}
 
 			reply := createBusETAMessage(busArrival, busStop)
@@ -259,5 +259,7 @@ func (this *SceneBusCallbackMiddleware) Process(bot *TelegramAPI.BotAPI, update 
 		}
 
 	}
+
+	return true
 
 }
