@@ -81,7 +81,7 @@ func main() {
 	director := director.New()
 	director.Add(
 		scenes.NewSceneMain(),
-		scenes.NewSceneBus(lta),
+		scenes.NewSceneBus(lta, db),
 	)
 	director.SetDefaultScene("Main")
 	bot.AddMiddleware(director)

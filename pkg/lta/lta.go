@@ -2,6 +2,7 @@ package lta
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -36,7 +37,7 @@ func (this *API) CallBusArrivalv2(busStop string, busNumber string) *BusArrivalv
 }
 
 func (this *API) CallBusStops(skip int) *BusStops {
-	path := "/ltaodataservice/BusStops"
+	path := "ltaodataservice/BusStops"
 	if skip >= 0 {
 		path += "?$skip=" + strconv.Itoa(skip)
 	}
@@ -50,6 +51,10 @@ func (this *API) CallBusStops(skip int) *BusStops {
 
 func (this *API) CallAPI2JSON(path string, v interface{}) error {
 	resp := this.CallAPI(path)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("[CallAPI2JSON] Bad Status: %d", resp.StatusCode)
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	errCheck("[CallAPI2JSON] Error converting response body to []byte", err)
 
@@ -67,7 +72,6 @@ func (this *API) CallAPI(path string) *http.Response {
 
 	resp, err := this.client.Do(req)
 	errCheck("Something wrong with processing the request", err)
-
 	return resp
 }
 

@@ -88,3 +88,22 @@ func (this *Database) RefreshBusStopTable(busStops []BusStopTable) {
 	err = transaction.Commit()
 	errCheck("[Database][ResetBusStopTable] Error committing transaction", err)
 }
+
+func (this *Database) GetBusStop(busStop string) *BusStopTable {
+	db, err := sql.Open(dbType, this.dbPath)
+	errCheck("[Database][ResetBusStopTable] Cannot open DB", err)
+	defer db.Close()
+
+	query := "SELECT BusStopCode, RoadName, Description, Latitude, Longitude FROM bus_stop_info WHERE BusStopCode = ?"
+	rows, err := db.Query(query, busStop)
+	errCheck("[Database][DoesBusStopExist] Problem with query", err)
+
+	// I only expect 1 row
+	if !rows.Next() {
+		return nil
+	}
+
+	var ret BusStopTable
+	rows.Scan(&ret.BusStopCode, &ret.RoadName, &ret.Description, &ret.Latitude, &ret.Longitude)
+	return &ret
+}

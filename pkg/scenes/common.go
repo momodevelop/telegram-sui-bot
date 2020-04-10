@@ -2,6 +2,7 @@ package scenes
 
 import (
 	"log"
+	"strings"
 
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -20,4 +21,25 @@ func errCheck(msg string, err error) {
 		log.Printf("%s", msg)
 		log.Panic(err)
 	}
+}
+
+func sendSimpleReply(message string, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+	bot.Send(TelegramAPI.NewMessage(update.Message.Chat.ID, message))
+}
+
+func padStart(str string, item string, count int) string {
+	padAmount := count - len(str)
+	if padAmount > 0 {
+		return strings.Repeat(item, padAmount) + str
+	}
+	return str
+
+}
+
+func padEnd(str string, item string, count int) string {
+	padAmount := count - len(str)
+	if padAmount > 0 {
+		return str + strings.Repeat(item, padAmount)
+	}
+	return str
 }
