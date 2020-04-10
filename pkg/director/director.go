@@ -75,4 +75,5 @@ func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update
 
 		}
 	}
+
 }
