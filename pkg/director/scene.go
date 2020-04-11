@@ -9,7 +9,6 @@ type Session struct {
 
 type IScene interface {
 	Name() string
-	Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
 	Process(session *Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
 }
 

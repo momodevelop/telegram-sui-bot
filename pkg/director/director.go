@@ -59,20 +59,18 @@ func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update
 		scene, ok := this.scenes[session.scene]
 		if !ok {
 			log.Panicf("Invalid Scene: %s", session.scene)
-		}
-		if !oldUser {
-			scene.Greet(bot, update)
 		} else {
-			scene.Process(session, bot, update)
-			if session.hasChanged {
-				sceneToChange, ok := this.scenes[session.scene]
-				if !ok {
-					log.Panicf("Invalid Scene to change: %s", session.scene)
+			go func() {
+				scene.Process(session, bot, update)
+				if session.hasChanged {
+					sceneToChange, ok := this.scenes[session.scene]
+					if !ok {
+						log.Panicf("Invalid Scene to change: %s", session.scene)
+					}
+					session.hasChanged = false
+					sceneToChange.Process(session, bot, update)
 				}
-				session.hasChanged = false
-				sceneToChange.Greet(bot, update)
-			}
-
+			}()
 		}
 
 	}
