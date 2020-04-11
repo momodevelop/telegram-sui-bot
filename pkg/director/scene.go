@@ -9,7 +9,7 @@ type Session struct {
 
 type IScene interface {
 	Name() string
-	Process(session *Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
+	Process(session *Session, bot *TelegramAPI.BotAPI, message *TelegramAPI.Message)
 }
 
 func (this *Session) ChangeScene(sceneName string) {

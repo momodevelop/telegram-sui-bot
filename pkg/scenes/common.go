@@ -7,9 +7,9 @@ import (
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-func recovery(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+func recovery(bot *TelegramAPI.BotAPI, message *TelegramAPI.Message) {
 	if r := recover(); r != nil {
-		msg := TelegramAPI.NewMessage(update.Message.Chat.ID, "Oops, something went wrong ><")
+		msg := TelegramAPI.NewMessage(message.Chat.ID, "Oops, something went wrong ><")
 		bot.Send(msg)
 
 		log.Println("Stop panicking: ", r)

@@ -14,17 +14,6 @@ import (
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-type SceneBusCallbackMiddleware struct {
-	busAPI *lta.API
-	db     *database.Database
-}
-
-type BusRefreshCallbackData struct {
-	Cmd       string `json:"cmd"`
-	BusStop   string `json:"busStop"`
-	TimeStamp int    `json:"timeStamp"`
-}
-
 type SceneBus struct {
 	busAPI *lta.API
 	db     *database.Database
@@ -41,21 +30,11 @@ func (this *SceneBus) Name() string {
 	return "Bus"
 }
 
-func (this *SceneBus) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
-	message := "I can help you check for the buses at your bus stop...!\nJust key in the bus stop number or send me your location and I'll try to find the timings ASAP!（｀・ω・´）\n"
-	msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
-	msg.ReplyMarkup = getSceneBusKeyboard()
-	bot.Send(msg)
-}
+func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI, message *TelegramAPI.Message) {
+	defer recovery(bot, message)
 
-func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
-	if update.Message == nil {
-		return
-	}
-	defer recovery(bot, update)
-
-	if len(update.Message.Text) > 0 {
-		msg := update.Message.Text
+	if len(message.Text) > 0 {
+		msg := message.Text
 		if msg == "/exit" {
 			session.ChangeScene("Main")
 			return
@@ -69,46 +48,49 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 		if len(matches) > 0 {
 			busStopCode, err := strconv.Atoi(matches[0])
 			if err != nil || len(matches[0]) > 5 {
-				bot.Send(TelegramAPI.NewMessage(update.Message.Chat.ID, "Invalid bus stop code! Try again..."))
+				bot.Send(TelegramAPI.NewMessage(message.Chat.ID, "Invalid bus stop code! Try again..."))
 				return
 			}
 			busStopCodeStr := busStop2Str(busStopCode)
 			busStop := this.db.GetBusStop(padStart(busStopCodeStr, "0", 5))
 			if busStop == nil {
-				bot.Send(TelegramAPI.NewMessage(update.Message.Chat.ID, "That bus stop does not exist!"))
+				bot.Send(TelegramAPI.NewMessage(message.Chat.ID, "That bus stop does not exist!"))
 				return
 			}
 
 			busArrival := this.busAPI.CallBusArrivalv2(busStopCodeStr, "")
 			if len(busArrival.Services) == 0 {
-				bot.Send(TelegramAPI.NewMessage(update.Message.Chat.ID, "There are no more buses coming...Maybe you should hail the cab? ^^a"))
+				bot.Send(TelegramAPI.NewMessage(message.Chat.ID, "There are no more buses coming...Maybe you should hail the cab? ^^a"))
 				return
 			}
 
-			message := createBusETAMessage(busArrival, busStop)
-			msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
+			reply := createBusETAMessage(busArrival, busStop)
+			msg := TelegramAPI.NewMessage(message.Chat.ID, reply)
 			msg.ParseMode = "markdown"
 			msg.ReplyMarkup = getBusSceneInlineRefreshKeyboard(busStopCodeStr, time.Now().Nanosecond())
 			bot.Send(msg)
 		} else {
-			this.Greet(bot, update)
+			reply := "I can help you check for the buses at your bus stop...!\nJust key in the bus stop number or send me your location and I'll try to find the timings ASAP!（｀・ω・´）\n"
+			msg := TelegramAPI.NewMessage(message.Chat.ID, reply)
+			msg.ReplyMarkup = getSceneBusKeyboard()
+			bot.Send(msg)
 		}
 
-	} else if update.Message.Location != nil {
-		busStop := this.db.GetBusStopByNearestLocation(update.Message.Location.Latitude, update.Message.Location.Longitude)
+	} else if message.Location != nil {
+		busStop := this.db.GetBusStopByNearestLocation(message.Location.Latitude, message.Location.Longitude)
 		if busStop == nil {
-			bot.Send(TelegramAPI.NewMessage(update.Message.Chat.ID, "That bus stop does not exist!"))
+			bot.Send(TelegramAPI.NewMessage(message.Chat.ID, "That bus stop does not exist!"))
 			return
 		}
 
 		busArrival := this.busAPI.CallBusArrivalv2(busStop.BusStopCode, "")
 		if len(busArrival.Services) == 0 {
-			bot.Send(TelegramAPI.NewMessage(update.Message.Chat.ID, "There are no more buses coming...Maybe you should hail the cab? ^^a"))
+			bot.Send(TelegramAPI.NewMessage(message.Chat.ID, "There are no more buses coming...Maybe you should hail the cab? ^^a"))
 			return
 		}
 
-		message := createBusETAMessage(busArrival, busStop)
-		msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
+		reply := createBusETAMessage(busArrival, busStop)
+		msg := TelegramAPI.NewMessage(message.Chat.ID, reply)
 		msg.ParseMode = "markdown"
 		msg.ReplyMarkup = getBusSceneInlineRefreshKeyboard(busStop.BusStopCode, time.Now().Nanosecond())
 		bot.Send(msg)

@@ -36,43 +36,40 @@ func (this *Manager) Add(scenes ...IScene) {
 
 }
 
-func (this *Manager) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) bool {
+func (this *Manager) Process(bot *TelegramAPI.BotAPI, message *TelegramAPI.Message) bool {
 	if len(this.defaultSceneName) == 0 {
 		log.Panicf("Default scene does not exist! Please set with SetDefaultScene()")
 	}
 
-	if update.Message != nil {
-		user := update.Message.From
+	user := message.From
 
-		// Check if session exists. If it does not, create new session
-		session, oldUser := this.sessions[user.ID]
-		if !oldUser {
-			var ok bool
-			this.sessions[user.ID] = &Session{scene: this.defaultSceneName}
-			session, ok = this.sessions[user.ID]
-			if !ok {
-				log.Panicf("Cannot create session for %d", user.ID)
-			}
-		}
-
-		// redirect based on session
-		scene, ok := this.scenes[session.scene]
+	// Check if session exists. If it does not, create new session
+	session, oldUser := this.sessions[user.ID]
+	if !oldUser {
+		var ok bool
+		this.sessions[user.ID] = &Session{scene: this.defaultSceneName}
+		session, ok = this.sessions[user.ID]
 		if !ok {
-			log.Panicf("Invalid Scene: %s", session.scene)
-		} else {
-			go func() {
-				scene.Process(session, bot, update)
-				if session.hasChanged {
-					sceneToChange, ok := this.scenes[session.scene]
-					if !ok {
-						log.Panicf("Invalid Scene to change: %s", session.scene)
-					}
-					session.hasChanged = false
-					sceneToChange.Process(session, bot, update)
-				}
-			}()
+			log.Panicf("Cannot create session for %d", user.ID)
 		}
+	}
 
+	// redirect based on session
+	scene, ok := this.scenes[session.scene]
+	if !ok {
+		log.Panicf("Invalid Scene: %s", session.scene)
+	} else {
+		go func() {
+			scene.Process(session, bot, message)
+			if session.hasChanged {
+				sceneToChange, ok := this.scenes[session.scene]
+				if !ok {
+					log.Panicf("Invalid Scene to change: %s", session.scene)
+				}
+				session.hasChanged = false
+				sceneToChange.Process(session, bot, message)
+			}
+		}()
 	}
 
 	return true

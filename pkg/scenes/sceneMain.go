@@ -18,25 +18,21 @@ func (obj *SceneMain) Name() string {
 	return "Main"
 }
 
-func (obj *SceneMain) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
-	message := obj.getGreeting()
-	msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
-	msg.ReplyMarkup = obj.getKeyboard()
-	bot.Send(msg)
-}
-
-func (obj *SceneMain) Process(session *director.Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
-	switch update.Message.Text {
+func (obj *SceneMain) Process(session *director.Session, bot *TelegramAPI.BotAPI, message *TelegramAPI.Message) {
+	switch message.Text {
 	case "/bus":
 		session.ChangeScene("Bus")
 		return
 	case "/food":
-		msg := TelegramAPI.NewMessage(update.Message.Chat.ID, fmt.Sprintf("You should have *%s*!", obj.getRandomFoodRecommandation()))
+		msg := TelegramAPI.NewMessage(message.Chat.ID, fmt.Sprintf("You should have *%s*!", obj.getRandomFoodRecommandation()))
 		msg.ParseMode = "markdown"
 		msg.ReplyMarkup = obj.getKeyboard()
 		bot.Send(msg)
 	default:
-		obj.Greet(bot, update)
+		reply := obj.getGreeting()
+		msg := TelegramAPI.NewMessage(message.Chat.ID, reply)
+		msg.ReplyMarkup = obj.getKeyboard()
+		bot.Send(msg)
 	}
 }
 
