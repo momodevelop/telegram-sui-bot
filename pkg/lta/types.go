@@ -4,8 +4,8 @@ type BusStopsValue struct {
 	BusStopCode string  `json:"BusStopCode"`
 	RoadName    string  `json:"RoadName"`
 	Description string  `json:"Description"`
-	Latitude    float32 `json:"Latitude"`
-	Longitude   float32 `json:"Longitude"`
+	Latitude    float64 `json:"Latitude"`
+	Longitude   float64 `json:"Longitude"`
 }
 
 type BusStops struct {

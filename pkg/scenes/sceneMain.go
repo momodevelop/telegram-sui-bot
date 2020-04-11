@@ -3,7 +3,7 @@ package scenes
 import (
 	"fmt"
 	"math/rand"
-	Director "telegram_go_sui_bot/pkg/director"
+	"telegram_go_sui_bot/pkg/director"
 
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -25,7 +25,7 @@ func (obj *SceneMain) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
 	bot.Send(msg)
 }
 
-func (obj *SceneMain) Process(session *Director.Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+func (obj *SceneMain) Process(session *director.Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
 	switch update.Message.Text {
 	case "/bus":
 		session.ChangeScene("Bus")

@@ -3,7 +3,6 @@ package scenes
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -50,10 +49,13 @@ func (this *SceneBus) Greet(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update)
 }
 
 func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
+	if update.Message == nil {
+		return
+	}
 	defer recovery(bot, update)
 
-	msg := update.Message.Text
-	if len(msg) > 0 {
+	if len(update.Message.Text) > 0 {
+		msg := update.Message.Text
 		if msg == "/exit" {
 			session.ChangeScene("Main")
 			return
@@ -88,11 +90,28 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 			msg.ParseMode = "markdown"
 			msg.ReplyMarkup = getBusSceneInlineRefreshKeyboard(busStopCodeStr, time.Now().Nanosecond())
 			bot.Send(msg)
+		} else {
+			this.Greet(bot, update)
+		}
 
+	} else if update.Message.Location != nil {
+		busStop := this.db.GetBusStopByNearestLocation(update.Message.Location.Latitude, update.Message.Location.Longitude)
+		if busStop == nil {
+			bot.Send(TelegramAPI.NewMessage(update.Message.Chat.ID, "That bus stop does not exist!"))
 			return
 		}
 
-		this.Greet(bot, update)
+		busArrival := this.busAPI.CallBusArrivalv2(busStop.BusStopCode, "")
+		if len(busArrival.Services) == 0 {
+			bot.Send(TelegramAPI.NewMessage(update.Message.Chat.ID, "There are no more buses coming...Maybe you should hail the cab? ^^a"))
+			return
+		}
+
+		message := createBusETAMessage(busArrival, busStop)
+		msg := TelegramAPI.NewMessage(update.Message.Chat.ID, message)
+		msg.ParseMode = "markdown"
+		msg.ReplyMarkup = getBusSceneInlineRefreshKeyboard(busStop.BusStopCode, time.Now().Nanosecond())
+		bot.Send(msg)
 
 	}
 
@@ -125,7 +144,7 @@ func createBusETAMessage(arrival *lta.BusArrivalv2, stop *database.BusStopTable)
 	}
 
 	resultArr := make([]string, 0, len(arrival.Services))
-	resultArr = append(resultArr, fmt.Sprintf("*%s, %s*```\n", arrival.BusStopCode, stop.Description))
+	resultArr = append(resultArr, fmt.Sprintf("*%s, %s*\n```\n", arrival.BusStopCode, stop.Description))
 
 	for _, e := range arrival.Services {
 		// format:
@@ -199,67 +218,5 @@ func getBusSceneInlineRefreshKeyboard(busStop string, timeStamp int) TelegramAPI
 			TelegramAPI.NewInlineKeyboardButtonData("Refresh", string(bytes)),
 		),
 	)
-
-}
-
-func NewSceneBusCallbackMiddleware(busAPI *lta.API, db *database.Database) *SceneBusCallbackMiddleware {
-	return &SceneBusCallbackMiddleware{
-		busAPI: busAPI,
-		db:     db,
-	}
-}
-
-func (this *SceneBusCallbackMiddleware) Process(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) bool {
-
-	if update.CallbackQuery != nil {
-		defer func(bot *TelegramAPI.BotAPI, update *TelegramAPI.Update) {
-			if r := recover(); r != nil {
-				msg := TelegramAPI.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, "Oops, something went wrong ><")
-				bot.Send(msg)
-
-				log.Println("Stop panicking: ", r)
-			}
-		}(bot, update)
-
-		// Check if CallbackQuery is parsable to BusRefreshCallbackData
-		var callbackData BusRefreshCallbackData
-		err := json.Unmarshal([]byte(update.CallbackQuery.Data), &callbackData)
-		if err != nil {
-			return true
-		}
-
-		if callbackData.Cmd == "refresh" {
-			busStop := this.db.GetBusStop(callbackData.BusStop)
-			if busStop == nil {
-				bot.Send(TelegramAPI.NewEditMessageText(
-					update.CallbackQuery.Message.Chat.ID,
-					update.CallbackQuery.Message.MessageID,
-					"That bus stop does not exist!",
-				))
-				return true
-			}
-
-			busArrival := this.busAPI.CallBusArrivalv2(callbackData.BusStop, "")
-			if len(busArrival.Services) == 0 {
-				bot.Send(TelegramAPI.NewEditMessageText(
-					update.CallbackQuery.Message.Chat.ID,
-					update.CallbackQuery.Message.MessageID,
-					"There are no more buses coming...Maybe you should hail the cab? ^^a",
-				))
-				return true
-			}
-
-			reply := createBusETAMessage(busArrival, busStop)
-			msg := TelegramAPI.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, reply)
-			msg.ParseMode = "markdown"
-			keyboard := getBusSceneInlineRefreshKeyboard(callbackData.BusStop, time.Now().Nanosecond())
-			msg.ReplyMarkup = &keyboard
-			bot.Send(msg)
-
-		}
-
-	}
-
-	return true
 
 }

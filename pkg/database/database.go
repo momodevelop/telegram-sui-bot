@@ -89,6 +89,25 @@ func (this *Database) RefreshBusStopTable(busStops []BusStopTable) {
 	errCheck("[Database][ResetBusStopTable] Error committing transaction", err)
 }
 
+func (this *Database) GetBusStopByNearestLocation(latitude float64, longitude float64) *BusStopTable {
+	db, err := sql.Open(dbType, this.dbPath)
+	errCheck("[Database][ResetBusStopTable] Cannot open DB", err)
+	defer db.Close()
+
+	query := fmt.Sprintf("SELECT BusStopCode, RoadName, Description, Latitude, Longitude FROM bus_stop_info ORDER BY (Latitude - ?) * (Latitude - ?) + (Longitude - ?) * (Longitude - ?)")
+	rows, err := db.Query(query, latitude, latitude, longitude, longitude)
+	errCheck("[Database][DoesBusStopExist] Problem with query", err)
+
+	// I only expect 1 row
+	if !rows.Next() {
+		return nil
+	}
+
+	var ret BusStopTable
+	rows.Scan(&ret.BusStopCode, &ret.RoadName, &ret.Description, &ret.Latitude, &ret.Longitude)
+	return &ret
+}
+
 func (this *Database) GetBusStop(busStop string) *BusStopTable {
 	db, err := sql.Open(dbType, this.dbPath)
 	errCheck("[Database][ResetBusStopTable] Cannot open DB", err)
