@@ -84,8 +84,8 @@ func main() {
 		scenes.NewSceneBus(lta, db),
 	)
 	director.SetDefaultScene("Main")
-	bot.AddCallbackQueryMiddleware(scenes.NewBusRefreshCallbackQuery(lta, db))
-	bot.AddMessageMiddleware(director)
+	bot.AddCallbackQueryHandler(scenes.NewBusRefreshCallbackQuery(lta, db))
+	bot.AddMessageHandler(director)
 	bot.Run()
 
 	log.Println("Exiting")

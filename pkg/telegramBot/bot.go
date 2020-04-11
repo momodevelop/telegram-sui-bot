@@ -6,26 +6,26 @@ import (
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-type IMessageMiddleware interface {
+type IMessageHandler interface {
 	Process(*TelegramAPI.BotAPI, *TelegramAPI.Message) bool
 }
 
-type ICallbackQueryMiddleware interface {
+type ICallbackQueryHandler interface {
 	Process(*TelegramAPI.BotAPI, *TelegramAPI.CallbackQuery) bool
 }
 
 type Bot struct {
-	Token                    string
-	messageMiddlewares       []IMessageMiddleware
-	callbackQueryMiddlewares []ICallbackQueryMiddleware
+	Token                 string
+	messageHandlers       []IMessageHandler
+	callbackQueryHandlers []ICallbackQueryHandler
 }
 
-func (this *Bot) AddMessageMiddleware(middleware ...IMessageMiddleware) {
-	this.messageMiddlewares = append(this.messageMiddlewares, middleware...)
+func (this *Bot) AddMessageHandler(handler ...IMessageHandler) {
+	this.messageHandlers = append(this.messageHandlers, handler...)
 }
 
-func (this *Bot) AddCallbackQueryMiddleware(middleware ...ICallbackQueryMiddleware) {
-	this.callbackQueryMiddlewares = append(this.callbackQueryMiddlewares, middleware...)
+func (this *Bot) AddCallbackQueryHandler(handler ...ICallbackQueryHandler) {
+	this.callbackQueryHandlers = append(this.callbackQueryHandlers, handler...)
 }
 
 func (this *Bot) Run() {
@@ -43,14 +43,14 @@ func (this *Bot) Run() {
 	for update := range updates {
 
 		if update.CallbackQuery != nil {
-			for _, middleware := range this.callbackQueryMiddlewares {
-				if !middleware.Process(bot, update.CallbackQuery) {
+			for _, handler := range this.callbackQueryHandlers {
+				if !handler.Process(bot, update.CallbackQuery) {
 					break
 				}
 			}
 		} else if update.Message != nil {
-			for _, middleware := range this.messageMiddlewares {
-				if !middleware.Process(bot, update.Message) {
+			for _, handler := range this.messageHandlers {
+				if !handler.Process(bot, update.Message) {
 					break
 				}
 			}
