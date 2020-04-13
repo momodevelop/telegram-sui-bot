@@ -16,13 +16,6 @@ func recovery(bot *TelegramAPI.BotAPI, message *TelegramAPI.Message) {
 	}
 }
 
-func errCheck(msg string, err error) {
-	if err != nil {
-		log.Printf("%s", msg)
-		log.Panic(err)
-	}
-}
-
 func padStart(str string, item string, count int) string {
 	padAmount := count - len(str)
 	if padAmount > 0 {
