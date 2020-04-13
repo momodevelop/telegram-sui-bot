@@ -3,7 +3,6 @@ package scenes
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -42,9 +41,7 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 		}
 
 		rex, err := regexp.Compile(`\d+`)
-		if err != nil {
-			log.Panic(err)
-		}
+		errCheck("Regex is problemetic", err)
 
 		matches := rex.FindAllString(msg, -1)
 
@@ -175,9 +172,7 @@ func nextBusETA(estimatedTimeArr string) int {
 	*/
 
 	etaDate, err := time.Parse("2006-01-02T15:04:05-07:00", estimatedTimeArr)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[SceneBus][nextBusETA]", err)
 
 	now := time.Now()
 
@@ -198,9 +193,7 @@ func getBusSceneInlineRefreshKeyboard(busStop string, timeStamp int) TelegramAPI
 		BusStop:   busStop,
 		TimeStamp: timeStamp,
 	})
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[getBusSceneInlineRefreshKeyboard] Problems converting callback data to string", err)
 
 	return TelegramAPI.NewInlineKeyboardMarkup(
 		TelegramAPI.NewInlineKeyboardRow(

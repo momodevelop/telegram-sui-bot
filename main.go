@@ -15,7 +15,7 @@ import (
 type Config map[string]string
 
 func initConfig() Config {
-	log.Println("[initConfig] Initializing...")
+	log.Println("Initializing config...")
 	var config Config
 	ex, err := os.Executable()
 	if err != nil {

@@ -11,6 +11,13 @@ import (
 
 var dbType string = "sqlite3"
 
+func errCheck(msg string, err error) {
+	if err != nil {
+		log.Printf("%s", msg)
+		log.Panic(err)
+	}
+}
+
 type Database struct {
 	dbPath string
 }
@@ -18,9 +25,7 @@ type Database struct {
 func New(dbPath string) *Database {
 	log.Println("Checking database...")
 	db, err := sql.Open(dbType, dbPath)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[New] Cannot open DB", err)
 	defer db.Close()
 
 	ret := Database{
@@ -32,37 +37,27 @@ func New(dbPath string) *Database {
 
 func (this *Database) RefreshBusStopTable(busStops []BusStopTable) {
 	db, err := sql.Open(dbType, this.dbPath)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[Database][ResetBusStopTable] Cannot open DB", err)
 	defer db.Close()
 
 	queryDropTable := "DROP TABLE IF EXISTS bus_stop_info"
 	queryCreateTable := "CREATE TABLE IF NOT EXISTS bus_stop_info(BusStopCode TEXT PRIMARY KEY, RoadName TEXT, Description TEXT, Latitude float(24), Longitude float(24))"
 
 	transaction, err := db.Begin()
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[Database][ResetBusStopTable] Problems preparing transaction", err)
 
 	defer func() {
 		if err != nil {
 			err = transaction.Rollback()
-			if err != nil {
-				log.Panic(err)
-			}
+			errCheck("[Database][ResetBusStopTable] Problems with rollback", err)
 		}
 	}()
 
 	_, err = transaction.Exec(queryDropTable)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[Database][ResetBusStopTable] Error with dropping table", err)
 
 	_, err = transaction.Exec(queryCreateTable)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[Database][ResetBusStopTable] Error with create table", err)
 
 	batchCounter := 0
 	batchLimit := 100
@@ -82,9 +77,7 @@ func (this *Database) RefreshBusStopTable(busStops []BusStopTable) {
 		if batchCounter == batchLimit {
 			queryInsertInto := fmt.Sprintf("INSERT INTO bus_stop_info (BusStopCode, RoadName, Description, Latitude, Longitude) VALUES %s", strings.Join(queryInsertIntoStr, ","))
 			_, err = transaction.Exec(queryInsertInto, queryInsertIntoArgs...)
-			if err != nil {
-				log.Panic(err)
-			}
+			errCheck("[Database][ResetBusStopTable] Error with insert into", err)
 			queryInsertIntoStr = queryInsertIntoStr[:0]
 			queryInsertIntoArgs = queryInsertIntoArgs[:0]
 			batchCounter = 0
@@ -93,23 +86,17 @@ func (this *Database) RefreshBusStopTable(busStops []BusStopTable) {
 
 	// Commit
 	err = transaction.Commit()
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[Database][ResetBusStopTable] Error committing transaction", err)
 }
 
 func (this *Database) GetBusStopByNearestLocation(latitude float64, longitude float64) *BusStopTable {
 	db, err := sql.Open(dbType, this.dbPath)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[Database][ResetBusStopTable] Cannot open DB", err)
 	defer db.Close()
 
 	query := fmt.Sprintf("SELECT BusStopCode, RoadName, Description, Latitude, Longitude FROM bus_stop_info ORDER BY (Latitude - ?) * (Latitude - ?) + (Longitude - ?) * (Longitude - ?)")
 	rows, err := db.Query(query, latitude, latitude, longitude, longitude)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[Database][DoesBusStopExist] Problem with query", err)
 
 	// I only expect 1 row
 	if !rows.Next() {
@@ -123,16 +110,12 @@ func (this *Database) GetBusStopByNearestLocation(latitude float64, longitude fl
 
 func (this *Database) GetBusStop(busStop string) *BusStopTable {
 	db, err := sql.Open(dbType, this.dbPath)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[Database][ResetBusStopTable] Cannot open DB", err)
 	defer db.Close()
 
 	query := "SELECT BusStopCode, RoadName, Description, Latitude, Longitude FROM bus_stop_info WHERE BusStopCode = ?"
 	rows, err := db.Query(query, busStop)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[Database][DoesBusStopExist] Problem with query", err)
 
 	// I only expect 1 row
 	if !rows.Next() {

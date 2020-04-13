@@ -31,9 +31,7 @@ func (this *API) CallBusArrivalv2(busStop string, busNumber string) *BusArrivalv
 
 	var ret *BusArrivalv2
 	err := this.CallAPI2JSON(path, &ret)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[CallBusArrivalv2] Something went wrong", err)
 
 	return ret
 }
@@ -46,9 +44,7 @@ func (this *API) CallBusStops(skip int) *BusStops {
 
 	var ret *BusStops
 	err := this.CallAPI2JSON(path, &ret)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[CallBusArrivalv2] Something went wrong", err)
 
 	return ret
 }
@@ -60,9 +56,7 @@ func (this *API) CallAPI2JSON(path string, v interface{}) error {
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("[CallAPI2JSON] Error converting response body to []byte", err)
 
 	return json.Unmarshal(body, &v)
 }
@@ -72,15 +66,18 @@ func (this *API) CallAPI(path string) *http.Response {
 
 	//log.Printf("[API][CallAPI] %s\n", fullpath)
 	req, err := http.NewRequest("GET", fullpath, nil)
-	if err != nil {
-		log.Panic(err)
-	}
+	errCheck("Something wrong with creating a new request", err)
 
 	req.Header.Add("AccountKey", this.Token)
 
 	resp, err := this.client.Do(req)
+	errCheck("Something wrong with processing the request", err)
+	return resp
+}
+
+func errCheck(msg string, err error) {
 	if err != nil {
+		log.Printf("%s", msg)
 		log.Panic(err)
 	}
-	return resp
 }
