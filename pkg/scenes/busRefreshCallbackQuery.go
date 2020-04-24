@@ -29,24 +29,20 @@ func NewBusRefreshCallbackQuery(busAPI *lta.API, db *database.Database) *BusRefr
 }
 
 func (this *BusRefreshCallbackQuery) Process(bot *TelegramAPI.BotAPI, callbackQuery *TelegramAPI.CallbackQuery) bool {
-	defer func() {
-		if r := recover(); r != nil {
-			msg := TelegramAPI.NewEditMessageText(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID, "Oops, something went wrong ><")
-			bot.Send(msg)
-
-			log.Println("Stop panicking: ", r)
-		}
-	}()
-
 	// Check if CallbackQuery is parsable to BusRefreshCallbackData
 	var callbackData BusRefreshCallbackData
 	err := json.Unmarshal([]byte(callbackQuery.Data), &callbackData)
 	if err != nil {
+		log.Printf("BusRefreshCallbackQuery][Process] Something weng wrong parsing json\n%s", err.Error())
 		return true
 	}
 
 	if callbackData.Cmd == "refresh" {
-		busStop := this.db.GetBusStop(callbackData.BusStop)
+		busStop, err := this.db.GetBusStop(callbackData.BusStop)
+		if err != nil {
+			log.Printf("BusRefreshCallbackQuery][Process] Something went wrong getting bus stop\n%s", err.Error())
+			return false
+		}
 		if busStop == nil {
 			bot.Send(TelegramAPI.NewEditMessageText(
 				callbackQuery.Message.Chat.ID,
@@ -66,12 +62,23 @@ func (this *BusRefreshCallbackQuery) Process(bot *TelegramAPI.BotAPI, callbackQu
 			return true
 		}
 
-		reply := createBusETAMessage(busArrival, busStop)
-		msg := TelegramAPI.NewEditMessageText(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID, reply)
+		reply, err := createBusETAMessage(busArrival, busStop)
+		if err != nil {
+			log.Printf("BusRefreshCallbackQuery][Process] Something went wrong with creating a bus ETA message\n%s", err.Error())
+			return false
+		}
+		msg := TelegramAPI.NewEditMessageText(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID, *reply)
 		msg.ParseMode = "markdown"
-		keyboard := getBusSceneInlineRefreshKeyboard(callbackData.BusStop, time.Now().Nanosecond())
-		msg.ReplyMarkup = &keyboard
+		keyboard, err := getBusSceneInlineRefreshKeyboard(callbackData.BusStop, time.Now().Nanosecond())
+		if err != nil {
+			log.Printf("BusRefreshCallbackQuery][Process] Something went wrong with creating a bus ETA message\n%s", err.Error())
+			return false
+		}
+
+		msg.ReplyMarkup = keyboard
 		bot.Send(msg)
+
+		return true
 
 	}
 

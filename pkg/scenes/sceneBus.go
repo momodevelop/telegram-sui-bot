@@ -41,7 +41,10 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 		}
 
 		rex, err := regexp.Compile(`\d+`)
-		errCheck("Regex is problemetic", err)
+		if err != nil {
+			tilt(bot, message, fmt.Errorf("[SceneBus][Process] Regex is problemetic\n%s", err.Error()))
+			return
+		}
 
 		matches := rex.FindAllString(msg, -1)
 
@@ -52,7 +55,11 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 				return
 			}
 			busStopCodeStr := busStop2Str(busStopCode)
-			busStop := this.db.GetBusStop(padStart(busStopCodeStr, "0", 5))
+			busStop, err := this.db.GetBusStop(padStart(busStopCodeStr, "0", 5))
+			if err != nil {
+				tilt(bot, message, fmt.Errorf("[SceneBus][Process] Can't get bus stop\n%s"))
+				return
+			}
 			if busStop == nil {
 				bot.Send(TelegramAPI.NewMessage(message.Chat.ID, "That bus stop does not exist!"))
 				return
@@ -64,10 +71,20 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 				return
 			}
 
-			reply := createBusETAMessage(busArrival, busStop)
-			msg := TelegramAPI.NewMessage(message.Chat.ID, reply)
+			reply, err := createBusETAMessage(busArrival, busStop)
+			if err != nil {
+				tilt(bot, message, fmt.Errorf("[SceneBus][Process] Can't get bus stop\n%s", err.Error()))
+				return
+			}
+			msg := TelegramAPI.NewMessage(message.Chat.ID, *reply)
 			msg.ParseMode = "markdown"
-			msg.ReplyMarkup = getBusSceneInlineRefreshKeyboard(busStopCodeStr, time.Now().Nanosecond())
+
+			result, err := getBusSceneInlineRefreshKeyboard(busStop.BusStopCode, time.Now().Nanosecond())
+			if err != nil {
+				tilt(bot, message, fmt.Errorf("[SceneBus][Process] Something wrong creating refresh keyboard\n%s", err.Error()))
+				return
+			}
+			msg.ReplyMarkup = result
 			bot.Send(msg)
 		} else {
 			reply := "I can help you check for the buses at your bus stop...!\nJust key in the bus stop number or send me your location and I'll try to find the timings ASAP!（｀・ω・´）\n"
@@ -77,7 +94,11 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 		}
 
 	} else if message.Location != nil {
-		busStop := this.db.GetBusStopByNearestLocation(message.Location.Latitude, message.Location.Longitude)
+		busStop, err := this.db.GetBusStopByNearestLocation(message.Location.Latitude, message.Location.Longitude)
+		if err != nil {
+			tilt(bot, message, fmt.Errorf("[SceneBus][Process] Something wrong getting bus stop by nearest location\n%s", err.Error()))
+			return
+		}
 		if busStop == nil {
 			bot.Send(TelegramAPI.NewMessage(message.Chat.ID, "That bus stop does not exist!"))
 			return
@@ -89,10 +110,21 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 			return
 		}
 
-		reply := createBusETAMessage(busArrival, busStop)
-		msg := TelegramAPI.NewMessage(message.Chat.ID, reply)
+		reply, err := createBusETAMessage(busArrival, busStop)
+		if err != nil {
+			tilt(bot, message, fmt.Errorf("[SceneBus][Process] Something wrong getting bus stop by nearest location\n%s", err.Error()))
+			return
+		}
+
+		msg := TelegramAPI.NewMessage(message.Chat.ID, *reply)
 		msg.ParseMode = "markdown"
-		msg.ReplyMarkup = getBusSceneInlineRefreshKeyboard(busStop.BusStopCode, time.Now().Nanosecond())
+
+		result, err := getBusSceneInlineRefreshKeyboard(busStop.BusStopCode, time.Now().Nanosecond())
+		if err != nil {
+			tilt(bot, message, fmt.Errorf("[SceneBus][Process] Something wrong creating refresh keyboard\n%s", err.Error()))
+			return
+		}
+		msg.ReplyMarkup = result
 		bot.Send(msg)
 
 	}
@@ -117,12 +149,13 @@ func getSceneBusKeyboard() TelegramAPI.ReplyKeyboardMarkup {
 }
 
 // helper functions
-func createBusETAMessage(arrival *lta.BusArrivalv2, stop *database.BusStopTable) string {
+func createBusETAMessage(arrival *lta.BusArrivalv2, stop *database.BusStopTable) (*string, error) {
 	currentDate := time.Now()
 	currentDateStr := fmt.Sprintf("_Last Updated: %02d-%02d-%02d %02d:%02d:%02d_", currentDate.Year(), currentDate.Month(), currentDate.Day(), currentDate.Hour(), currentDate.Minute(), currentDate.Second())
 
 	if len(arrival.Services) == 0 {
-		return fmt.Sprintf("There are no more buses coming...Maybe you should hail the cab? ^^a\n %s", currentDateStr)
+		result := fmt.Sprintf("There are no more buses coming...Maybe you should hail the cab? ^^a\n %s", currentDateStr)
+		return &result, nil
 	}
 
 	resultArr := make([]string, 0, len(arrival.Services))
@@ -139,13 +172,22 @@ func createBusETAMessage(arrival *lta.BusArrivalv2, stop *database.BusStopTable)
 		if e.NextBus.EstimatedArrival == "" {
 			strBus1 = "-"
 		} else {
-			strBus1 = padStart(strconv.Itoa(nextBusETA(e.NextBus.EstimatedArrival)), " ", 3)
+			eta, err := nextBusETA(e.NextBus.EstimatedArrival)
+			if err != nil {
+				return nil, fmt.Errorf("[createBusETAMessage] Problems getting next bus ETA\n%s", err.Error())
+			}
+			strBus1 = padStart(strconv.Itoa(eta), " ", 3)
 		}
 
 		if e.NextBus2.EstimatedArrival == "" {
 			strBus2 = "-"
 		} else {
-			strBus2 = padStart(strconv.Itoa(nextBusETA(e.NextBus2.EstimatedArrival)), " ", 3)
+			eta, err := nextBusETA(e.NextBus2.EstimatedArrival)
+			if err != nil {
+
+				return nil, fmt.Errorf("[createBusETAMessage] Problems getting next bus ETA\n%s", err.Error())
+			}
+			strBus2 = padStart(strconv.Itoa(eta), " ", 3)
 		}
 		resultArr = append(resultArr, fmt.Sprintf("%s:%s mins | %s mins\n", strService, strBus1, strBus2))
 	}
@@ -153,7 +195,9 @@ func createBusETAMessage(arrival *lta.BusArrivalv2, stop *database.BusStopTable)
 	resultArr = append(resultArr, "```")
 	resultArr = append(resultArr, currentDateStr)
 
-	return strings.Join(resultArr, "")
+	result := strings.Join(resultArr, "")
+
+	return &result, nil
 }
 
 func busStop2Str(busStop int) string {
@@ -161,7 +205,7 @@ func busStop2Str(busStop int) string {
 }
 
 // Returns the number of minutes for the next bus to come
-func nextBusETA(estimatedTimeArr string) int {
+func nextBusETA(estimatedTimeArr string) (int, error) {
 
 	//"EstimatedArrival": "2017-06-05T14:57:09+08:00"
 	/*
@@ -172,7 +216,9 @@ func nextBusETA(estimatedTimeArr string) int {
 	*/
 
 	etaDate, err := time.Parse("2006-01-02T15:04:05-07:00", estimatedTimeArr)
-	errCheck("[SceneBus][nextBusETA]", err)
+	if err != nil {
+		return 0, fmt.Errorf("[nextBusETA] Problems parsing time\n%s", err.Error())
+	}
 
 	now := time.Now()
 
@@ -180,25 +226,28 @@ func nextBusETA(estimatedTimeArr string) int {
 	mins := diff.Minutes()
 
 	if mins > 0 {
-		return int(mins)
+		return int(mins), nil
 	}
 
-	return 0
+	return 0, nil
 }
 
-func getBusSceneInlineRefreshKeyboard(busStop string, timeStamp int) TelegramAPI.InlineKeyboardMarkup {
+func getBusSceneInlineRefreshKeyboard(busStop string, timeStamp int) (*TelegramAPI.InlineKeyboardMarkup, error) {
 
 	bytes, err := json.Marshal(BusRefreshCallbackData{
 		Cmd:       "refresh",
 		BusStop:   busStop,
 		TimeStamp: timeStamp,
 	})
-	errCheck("[getBusSceneInlineRefreshKeyboard] Problems converting callback data to string", err)
+	if err != nil {
+		return nil, fmt.Errorf("[getBusSceneInlineRefreshKeyboard] Problems converting callback data to string\n%s", err.Error())
+	}
 
-	return TelegramAPI.NewInlineKeyboardMarkup(
+	result := TelegramAPI.NewInlineKeyboardMarkup(
 		TelegramAPI.NewInlineKeyboardRow(
 			TelegramAPI.NewInlineKeyboardButtonData("Refresh", string(bytes)),
 		),
 	)
+	return &result, nil
 
 }

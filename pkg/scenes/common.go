@@ -16,11 +16,10 @@ func recovery(bot *TelegramAPI.BotAPI, message *TelegramAPI.Message) {
 	}
 }
 
-func errCheck(msg string, err error) {
-	if err != nil {
-		log.Printf("%s", msg)
-		log.Panic(err)
-	}
+func tilt(bot *TelegramAPI.BotAPI, message *TelegramAPI.Message, err error) {
+	log.Printf("%s", err.Error())
+	msg := TelegramAPI.NewMessage(message.Chat.ID, "Oops, something went wrong ><")
+	bot.Send(msg)
 }
 
 func padStart(str string, item string, count int) string {
