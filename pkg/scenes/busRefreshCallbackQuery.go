@@ -52,7 +52,11 @@ func (this *BusRefreshCallbackQuery) Process(bot *TelegramAPI.BotAPI, callbackQu
 			return true
 		}
 
-		busArrival := this.busAPI.CallBusArrivalv2(callbackData.BusStop, "")
+		busArrival, err := this.busAPI.CallBusArrivalv2(callbackData.BusStop, "")
+		if err != nil {
+			log.Printf("[BusRefreshCallbackQuery][Process] Something went wrong with CallBusArrivalv2\n%s", err.Error())
+			return false
+		}
 		if len(busArrival.Services) == 0 {
 			bot.Send(TelegramAPI.NewEditMessageText(
 				callbackQuery.Message.Chat.ID,
@@ -64,14 +68,14 @@ func (this *BusRefreshCallbackQuery) Process(bot *TelegramAPI.BotAPI, callbackQu
 
 		reply, err := createBusETAMessage(busArrival, busStop)
 		if err != nil {
-			log.Printf("BusRefreshCallbackQuery][Process] Something went wrong with creating a bus ETA message\n%s", err.Error())
+			log.Printf("[BusRefreshCallbackQuery][Process] Something went wrong with creating a bus ETA message\n%s", err.Error())
 			return false
 		}
 		msg := TelegramAPI.NewEditMessageText(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID, *reply)
 		msg.ParseMode = "markdown"
 		keyboard, err := getBusSceneInlineRefreshKeyboard(callbackData.BusStop, time.Now().Nanosecond())
 		if err != nil {
-			log.Printf("BusRefreshCallbackQuery][Process] Something went wrong with creating a bus ETA message\n%s", err.Error())
+			log.Printf("[BusRefreshCallbackQuery][Process] Something went wrong with creating a bus ETA message\n%s", err.Error())
 			return false
 		}
 

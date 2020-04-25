@@ -42,7 +42,10 @@ func syncBusStopsFromApiToDb(lta *lta.API, db *database.Database) {
 	skip := 0
 	totalStops := 0
 	for {
-		busStopResponse := lta.CallBusStops(skip)
+		busStopResponse, err := lta.CallBusStops(skip)
+		if err != nil {
+			log.Panicf("[syncBusStopsFromApiToDb] Cannot call bus stops\n%s", err.Error())
+		}
 		if busStopResponse != nil && len(busStopResponse.Value) > 0 {
 			totalStops += len(busStopResponse.Value)
 			skip += 500
@@ -68,7 +71,10 @@ func syncBusStopsFromApiToDb(lta *lta.API, db *database.Database) {
 
 func main() {
 	config := initConfig()
-	db := database.New("database.db")
+	db, err := database.New("database.db")
+	if err != nil {
+		log.Panicf("Cannot initialize database\n%s", err.Error())
+	}
 	lta := lta.New(config["ltaToken"])
 
 	bot := telegramBot.Bot{

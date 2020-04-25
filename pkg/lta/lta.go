@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -22,7 +21,7 @@ func New(token string) *API {
 	return ret
 }
 
-func (this *API) CallBusArrivalv2(busStop string, busNumber string) *BusArrivalv2 {
+func (this *API) CallBusArrivalv2(busStop string, busNumber string) (*BusArrivalv2, error) {
 	path := "ltaodataservice/BusArrivalv2?BusStopCode=" + busStop
 
 	if busNumber == "" {
@@ -31,12 +30,13 @@ func (this *API) CallBusArrivalv2(busStop string, busNumber string) *BusArrivalv
 
 	var ret *BusArrivalv2
 	err := this.CallAPI2JSON(path, &ret)
-	errCheck("[CallBusArrivalv2] Something went wrong", err)
-
-	return ret
+	if err != nil {
+		return nil, fmt.Errorf("[LTA][CallBusArrivalv2] Something went wrong\n%s", err.Error())
+	}
+	return ret, nil
 }
 
-func (this *API) CallBusStops(skip int) *BusStops {
+func (this *API) CallBusStops(skip int) (*BusStops, error) {
 	path := "ltaodataservice/BusStops"
 	if skip >= 0 {
 		path += "?$skip=" + strconv.Itoa(skip)
@@ -44,40 +44,44 @@ func (this *API) CallBusStops(skip int) *BusStops {
 
 	var ret *BusStops
 	err := this.CallAPI2JSON(path, &ret)
-	errCheck("[CallBusArrivalv2] Something went wrong", err)
-
-	return ret
+	if err != nil {
+		return nil, fmt.Errorf("[LTA][CallBusStops] Something went wrong\n%s", err.Error())
+	}
+	return ret, nil
 }
 
 func (this *API) CallAPI2JSON(path string, v interface{}) error {
-	resp := this.CallAPI(path)
+	resp, err := this.CallAPI(path)
+	if err != nil {
+		return fmt.Errorf("[LTA][CallAPI2JSON] Error calling API\n%s", err.Error())
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("[CallAPI2JSON] Bad Status: %d", resp.StatusCode)
+		return fmt.Errorf("[LTA][CallAPI2JSON] Bad Status: %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
-	errCheck("[CallAPI2JSON] Error converting response body to []byte", err)
+	if err != nil {
+		return fmt.Errorf("[LTA][CallAPI2JSON] Error converting response body to []byte\n%s", err.Error())
+	}
 
 	return json.Unmarshal(body, &v)
 }
 
-func (this *API) CallAPI(path string) *http.Response {
+func (this *API) CallAPI(path string) (*http.Response, error) {
 	fullpath := "http://datamall2.mytransport.sg/" + path
 
 	//log.Printf("[API][CallAPI] %s\n", fullpath)
 	req, err := http.NewRequest("GET", fullpath, nil)
-	errCheck("Something wrong with creating a new request", err)
+	if err != nil {
+		return nil, fmt.Errorf("[LTA][CallAPI] Something went wrong getting a new request\n%s", err.Error())
+	}
 
 	req.Header.Add("AccountKey", this.Token)
 
 	resp, err := this.client.Do(req)
-	errCheck("Something wrong with processing the request", err)
-	return resp
-}
-
-func errCheck(msg string, err error) {
 	if err != nil {
-		log.Printf("%s", msg)
-		log.Panic(err)
+		return nil, fmt.Errorf("[LTA][CallAPI] Something went wrong doing the request\n%s", err.Error())
 	}
+	return resp, nil
 }

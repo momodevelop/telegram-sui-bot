@@ -65,7 +65,11 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 				return
 			}
 
-			busArrival := this.busAPI.CallBusArrivalv2(busStopCodeStr, "")
+			busArrival, err := this.busAPI.CallBusArrivalv2(busStopCodeStr, "")
+			if err != nil {
+				tilt(bot, message, fmt.Errorf("[SceneBus][Process] Something wrong calling CallBusArrivalv2 for bus stop number\n%s", err.Error()))
+				return
+			}
 			if len(busArrival.Services) == 0 {
 				bot.Send(TelegramAPI.NewMessage(message.Chat.ID, "There are no more buses coming...Maybe you should hail the cab? ^^a"))
 				return
@@ -104,7 +108,12 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 			return
 		}
 
-		busArrival := this.busAPI.CallBusArrivalv2(busStop.BusStopCode, "")
+		busArrival, err := this.busAPI.CallBusArrivalv2(busStop.BusStopCode, "")
+		if err != nil {
+			tilt(bot, message, fmt.Errorf("[SceneBus][Process] Something wrong calling CallBusArrivalv2 for location\n%s", err.Error()))
+			return
+		}
+
 		if len(busArrival.Services) == 0 {
 			bot.Send(TelegramAPI.NewMessage(message.Chat.ID, "There are no more buses coming...Maybe you should hail the cab? ^^a"))
 			return
