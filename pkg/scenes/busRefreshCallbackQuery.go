@@ -57,31 +57,33 @@ func (this *BusRefreshCallbackQuery) Process(bot *TelegramAPI.BotAPI, callbackQu
 			log.Printf("[BusRefreshCallbackQuery][Process] Something went wrong with CallBusArrivalv2\n%s", err.Error())
 			return false
 		}
-		if len(busArrival.Services) == 0 {
-			bot.Send(TelegramAPI.NewEditMessageText(
-				callbackQuery.Message.Chat.ID,
-				callbackQuery.Message.MessageID,
-				"There are no more buses coming...Maybe you should hail the cab? ^^a",
-			))
-			return true
-		}
 
-		reply, err := createBusETAMessage(busArrival, busStop)
-		if err != nil {
-			log.Printf("[BusRefreshCallbackQuery][Process] Something went wrong with creating a bus ETA message\n%s", err.Error())
-			return false
-		}
-		msg := TelegramAPI.NewEditMessageText(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID, *reply)
-		msg.ParseMode = "markdown"
 		keyboard, err := getBusSceneInlineRefreshKeyboard(callbackData.BusStop, time.Now().Nanosecond())
 		if err != nil {
-			log.Printf("[BusRefreshCallbackQuery][Process] Something went wrong with creating a bus ETA message\n%s", err.Error())
+			log.Printf("[BusRefreshCallbackQuery][Process] Something went wrong with creating refresh keyboard\n%s", err.Error())
 			return false
 		}
 
+		msg := TelegramAPI.NewEditMessageText(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID, "")
 		msg.ReplyMarkup = keyboard
-		bot.Send(msg)
 
+		if len(busArrival.Services) == 0 {
+			msg.Text = "There are no more buses coming...Maybe you should hail the cab? ^^a"
+			msg.ReplyMarkup = keyboard
+			bot.Send(msg)
+
+		} else {
+			reply, err := createBusETAMessage(busArrival, busStop)
+			if err != nil {
+				log.Printf("[BusRefreshCallbackQuery][Process] Something went wrong with creating a bus ETA message\n%s", err.Error())
+				return false
+			}
+			msg.Text = *reply
+			msg.ParseMode = "markdown"
+
+		}
+
+		bot.Send(msg)
 		return true
 
 	}
