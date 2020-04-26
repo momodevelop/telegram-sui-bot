@@ -5,11 +5,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"telegram_go_sui_bot/pkg/database"
-	"telegram_go_sui_bot/pkg/director"
-	"telegram_go_sui_bot/pkg/lta"
-	"telegram_go_sui_bot/pkg/scenes"
-	"telegram_go_sui_bot/pkg/telegramBot"
+	"telegram-sui-bot/pkg/database"
+	"telegram-sui-bot/pkg/director"
+	"telegram-sui-bot/pkg/lta"
+	"telegram-sui-bot/pkg/scenes"
+	"telegram-sui-bot/pkg/telegramBot"
 )
 
 type Config map[string]string

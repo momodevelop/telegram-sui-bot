@@ -1,6 +1,6 @@
 # Go parameters
 GOCMD=go
-GOINIT=$(GOCMD) mod init discordgo_sui_bot
+GOINIT=$(GOCMD) mod init telegram-sui-bot
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOPATH=$(GOCMD) test
@@ -8,7 +8,7 @@ GOGET=$(GOCMD) get
 
 
 # Local settings
-BINARY_NAME=discordgo_sui_bot
+BINARY_NAME=telegram-sui-bot
 CONFIG_DIR=../deploy/config
 DEPLOY_DIR=../deploy/packages/pi
 

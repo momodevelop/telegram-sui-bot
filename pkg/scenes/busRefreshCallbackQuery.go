@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"telegram_go_sui_bot/pkg/database"
-	"telegram_go_sui_bot/pkg/lta"
+	"telegram-sui-bot/pkg/database"
+	"telegram-sui-bot/pkg/lta"
 	"time"
 
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"

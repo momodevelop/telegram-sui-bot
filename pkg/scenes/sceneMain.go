@@ -3,7 +3,7 @@ package scenes
 import (
 	"fmt"
 	"math/rand"
-	"telegram_go_sui_bot/pkg/director"
+	"telegram-sui-bot/pkg/director"
 
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )

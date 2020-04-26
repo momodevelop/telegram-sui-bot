@@ -1,4 +1,4 @@
-module telegram_go_sui_bot
+module telegram-sui-bot
 
 go 1.13
 

@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"telegram_go_sui_bot/pkg/database"
-	"telegram_go_sui_bot/pkg/director"
-	"telegram_go_sui_bot/pkg/lta"
+	"telegram-sui-bot/pkg/database"
+	"telegram-sui-bot/pkg/director"
+	"telegram-sui-bot/pkg/lta"
 	"time"
 
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
