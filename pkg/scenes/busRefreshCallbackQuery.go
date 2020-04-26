@@ -2,6 +2,7 @@ package scenes
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"telegram_go_sui_bot/pkg/database"
 	"telegram_go_sui_bot/pkg/lta"
@@ -66,10 +67,11 @@ func (this *BusRefreshCallbackQuery) Process(bot *TelegramAPI.BotAPI, callbackQu
 
 		msg := TelegramAPI.NewEditMessageText(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID, "")
 		msg.ReplyMarkup = keyboard
+		msg.ParseMode = "markdown"
 
 		if len(busArrival.Services) == 0 {
-			msg.Text = "There are no more buses coming...Maybe you should hail the cab? ^^a"
-			msg.ReplyMarkup = keyboard
+			msg.Text = fmt.Sprintf("There are no more buses coming for ***%s***...Maybe you should hail the cab? ^^a", busStop.RoadName)
+			msg.ParseMode = "markdown"
 			bot.Send(msg)
 
 		} else {
@@ -79,10 +81,8 @@ func (this *BusRefreshCallbackQuery) Process(bot *TelegramAPI.BotAPI, callbackQu
 				return false
 			}
 			msg.Text = *reply
-			msg.ParseMode = "markdown"
-
 		}
-
+		msg.ParseMode = "markdown"
 		bot.Send(msg)
 		return true
 

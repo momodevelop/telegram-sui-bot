@@ -57,7 +57,7 @@ func (this *SceneBus) Process(session *director.Session, bot *TelegramAPI.BotAPI
 			busStopCodeStr := busStop2Str(busStopCode)
 			busStop, err := this.db.GetBusStop(padStart(busStopCodeStr, "0", 5))
 			if err != nil {
-				tilt(bot, message, fmt.Errorf("[SceneBus][Process] Can't get bus stop\n%s"))
+				tilt(bot, message, fmt.Errorf("[SceneBus][Process] Can't get bus stop\n%s", err.Error()))
 				return
 			}
 			if busStop == nil {

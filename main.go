@@ -49,7 +49,7 @@ func syncBusStopsFromApiToDb(lta *lta.API, db *database.Database) {
 		if busStopResponse != nil && len(busStopResponse.Value) > 0 {
 			totalStops += len(busStopResponse.Value)
 			skip += 500
-
+			log.Printf("[syncBusStopsFromApiToDb] %d stops...", totalStops)
 			for _, e := range busStopResponse.Value {
 				var table database.BusStopTable
 				table.BusStopCode = e.BusStopCode
