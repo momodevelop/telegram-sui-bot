@@ -36,7 +36,7 @@ func initConfig() Config {
 	return config
 }
 
-func syncBusStopsFromApiToDb(lta *lta.API, db *database.Database) {
+func syncBusStopsFromApiToDb(lta *lta.API, db *database.RepoBusStops) {
 	log.Println("[syncBusStopsFromApiToDb] Retrieving bus stops from API!")
 	busStops := make([]database.BusStopTable, 0)
 	skip := 0

@@ -16,10 +16,10 @@ import (
 
 type SceneBus struct {
 	busAPI *lta.API
-	db     *database.Database
+	db     *database.RepoBusStops
 }
 
-func NewSceneBus(busAPI *lta.API, db *database.Database) *SceneBus {
+func NewSceneBus(busAPI *lta.API, db *database.RepoBusStops) *SceneBus {
 	return &SceneBus{
 		busAPI: busAPI,
 		db:     db,

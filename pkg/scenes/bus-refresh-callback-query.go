@@ -13,7 +13,7 @@ import (
 
 type BusRefreshCallbackQuery struct {
 	busAPI *lta.API
-	db     *database.Database
+	db     *database.RepoBusStops
 }
 
 type BusRefreshCallbackData struct {
@@ -22,7 +22,7 @@ type BusRefreshCallbackData struct {
 	TimeStamp int    `json:"timeStamp"`
 }
 
-func NewBusRefreshCallbackQuery(busAPI *lta.API, db *database.Database) *BusRefreshCallbackQuery {
+func NewBusRefreshCallbackQuery(busAPI *lta.API, db *database.RepoBusStops) *BusRefreshCallbackQuery {
 	return &BusRefreshCallbackQuery{
 		busAPI: busAPI,
 		db:     db,
