@@ -21,7 +21,7 @@ func New(token string) *API {
 	return ret
 }
 
-func (this *API) CallBusArrivalv2(busStop string, busNumber string) (*BusArrivalv2, error) {
+func (this *API) CallBusArrival(busStop string, busNumber string) (*BusArrivalv2, error) {
 	path := "ltaodataservice/BusArrivalv2?BusStopCode=" + busStop
 
 	if busNumber == "" {
@@ -29,9 +29,9 @@ func (this *API) CallBusArrivalv2(busStop string, busNumber string) (*BusArrival
 	}
 
 	var ret *BusArrivalv2
-	err := this.CallAPI2JSON(path, &ret)
+	err := this.Call(path, &ret)
 	if err != nil {
-		return nil, fmt.Errorf("[LTA][CallBusArrivalv2] Something went wrong\n%s", err.Error())
+		return nil, fmt.Errorf("[LTA][CallBusArrival] Something went wrong\n%s", err.Error())
 	}
 	return ret, nil
 }
@@ -43,26 +43,26 @@ func (this *API) CallBusStops(skip int) (*BusStops, error) {
 	}
 
 	var ret *BusStops
-	err := this.CallAPI2JSON(path, &ret)
+	err := this.Call(path, &ret)
 	if err != nil {
 		return nil, fmt.Errorf("[LTA][CallBusStops] Something went wrong\n%s", err.Error())
 	}
 	return ret, nil
 }
 
-func (this *API) CallAPI2JSON(path string, v interface{}) error {
+func (this *API) Call(path string, v interface{}) error {
 	resp, err := this.CallAPI(path)
 	if err != nil {
-		return fmt.Errorf("[LTA][CallAPI2JSON] Error calling API\n%s", err.Error())
+		return fmt.Errorf("[LTA][Call] Error calling API\n%s", err.Error())
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("[LTA][CallAPI2JSON] Bad Status: %d", resp.StatusCode)
+		return fmt.Errorf("[LTA][Call] Bad Status: %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("[LTA][CallAPI2JSON] Error converting response body to []byte\n%s", err.Error())
+		return fmt.Errorf("[LTA][Call] Error converting response body to []byte\n%s", err.Error())
 	}
 
 	return json.Unmarshal(body, &v)

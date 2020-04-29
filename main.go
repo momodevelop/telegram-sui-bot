@@ -5,14 +5,19 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"telegram-sui-bot/pkg/database"
+	"telegram-sui-bot/pkg/data"
 	"telegram-sui-bot/pkg/director"
 	"telegram-sui-bot/pkg/lta"
+	"telegram-sui-bot/pkg/repos"
 	"telegram-sui-bot/pkg/scenes"
 	"telegram-sui-bot/pkg/telegramBot"
 )
 
-type Config map[string]string
+type Config struct {
+	TelegramToken string `json:"telegramToken"`
+	LtaToken      string `json:"ltaToken"`
+	DbPath        string `json:"dbPath"`
+}
 
 func initConfig() Config {
 	log.Println("Initializing config...")
@@ -36,63 +41,30 @@ func initConfig() Config {
 	return config
 }
 
-func syncBusStopsFromApiToDb(lta *lta.API, db *database.RepoBusStops) {
-	log.Println("[syncBusStopsFromApiToDb] Retrieving bus stops from API!")
-	busStops := make([]database.BusStopTable, 0)
-	skip := 0
-	totalStops := 0
-	for {
-		busStopResponse, err := lta.CallBusStops(skip)
-		if err != nil {
-			log.Panicf("[syncBusStopsFromApiToDb] Cannot call bus stops\n%s", err.Error())
-		}
-		if busStopResponse != nil && len(busStopResponse.Value) > 0 {
-			totalStops += len(busStopResponse.Value)
-			skip += 500
-			log.Printf("[syncBusStopsFromApiToDb] %d stops...", totalStops)
-			for _, e := range busStopResponse.Value {
-				var table database.BusStopTable
-				table.BusStopCode = e.BusStopCode
-				table.Description = e.Description
-				table.Latitude = e.Latitude
-				table.Longitude = e.Longitude
-				table.RoadName = e.RoadName
-				busStops = append(busStops, table)
-			}
-		} else {
-			break
-		}
-
-	}
-
-	log.Printf("[syncBusStopsFromApiToDb] %d entries inserted!\n", totalStops)
-	db.RefreshBusStopTable(busStops)
-}
-
 func main() {
 	config := initConfig()
-	db, err := database.New("database.db")
+	db := data.NewMysqlDatabase()
+	err := db.Open("database.db")
+	defer db.Close()
 	if err != nil {
 		log.Panicf("Cannot initialize database\n%s", err.Error())
 	}
-	lta := lta.New(config["ltaToken"])
+	lta := lta.New(config.LtaToken)
+
+	repo := repos.NewRepoBusStops(db, lta)
 
 	bot := telegramBot.Bot{
-		Token: config["telegramToken"],
+		Token: config.TelegramToken,
 	}
-
-	syncBusStopsFromApiToDb(lta, db)
 
 	// stage init
 	director := director.New()
 	director.Add(
 		scenes.NewSceneMain(),
-		scenes.NewSceneBus(lta, db),
+		scenes.NewSceneBus(repo),
 	)
 	director.SetDefaultScene("Main")
-	bot.AddCallbackQueryHandler(scenes.NewBusRefreshCallbackQuery(lta, db))
+	bot.AddCallbackQueryHandler(scenes.NewBusRefreshCallbackQuery(repo))
 	bot.AddMessageHandler(director)
 	bot.Run()
-
-	log.Println("Exiting")
 }

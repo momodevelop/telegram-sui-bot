@@ -4,16 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"telegram-sui-bot/pkg/database"
-	"telegram-sui-bot/pkg/lta"
+	"telegram-sui-bot/pkg/repos"
 	"time"
 
 	TelegramAPI "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 type BusRefreshCallbackQuery struct {
-	busAPI *lta.API
-	db     *database.RepoBusStops
+	RepoBusStops *repos.RepoBusStops
 }
 
 type BusRefreshCallbackData struct {
@@ -22,10 +20,9 @@ type BusRefreshCallbackData struct {
 	TimeStamp int    `json:"timeStamp"`
 }
 
-func NewBusRefreshCallbackQuery(busAPI *lta.API, db *database.RepoBusStops) *BusRefreshCallbackQuery {
+func NewBusRefreshCallbackQuery(RepoBusStops *repos.RepoBusStops) *BusRefreshCallbackQuery {
 	return &BusRefreshCallbackQuery{
-		busAPI: busAPI,
-		db:     db,
+		RepoBusStops: RepoBusStops,
 	}
 }
 
@@ -39,7 +36,7 @@ func (this *BusRefreshCallbackQuery) Process(bot *TelegramAPI.BotAPI, callbackQu
 	}
 
 	if callbackData.Cmd == "refresh" {
-		busStop, err := this.db.GetBusStop(callbackData.BusStop)
+		busStop, err := this.RepoBusStops.GetBusStop(callbackData.BusStop)
 		if err != nil {
 			log.Printf("BusRefreshCallbackQuery][Process] Something went wrong getting bus stop\n%s", err.Error())
 			return false
@@ -53,9 +50,9 @@ func (this *BusRefreshCallbackQuery) Process(bot *TelegramAPI.BotAPI, callbackQu
 			return true
 		}
 
-		busArrival, err := this.busAPI.CallBusArrivalv2(callbackData.BusStop, "")
+		busArrival, err := this.RepoBusStops.GetBusStopArrivals(callbackData.BusStop)
 		if err != nil {
-			log.Printf("[BusRefreshCallbackQuery][Process] Something went wrong with CallBusArrivalv2\n%s", err.Error())
+			log.Printf("[BusRefreshCallbackQuery][Process] Something went wrong getting bus arrival\n%s", err.Error())
 			return false
 		}
 

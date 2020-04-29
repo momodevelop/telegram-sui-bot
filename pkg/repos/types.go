@@ -1,9 +1,4 @@
-package database
-
-type Table interface {
-	Create() string
-	Insert() string
-}
+package repos
 
 type BusStopTable struct {
 	BusStopCode string
