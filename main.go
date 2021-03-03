@@ -1,70 +1,139 @@
 package main
 
 import (
-	"encoding/json"
-	"log"
-	"os"
-	"path/filepath"
-	"telegram-sui-bot/pkg/data"
-	"telegram-sui-bot/pkg/director"
-	"telegram-sui-bot/pkg/lta"
-	"telegram-sui-bot/pkg/repos"
-	"telegram-sui-bot/pkg/scenes"
-	"telegram-sui-bot/pkg/telegramBot"
+    tg "github.com/go-telegram-bot-api/telegram-bot-api"
+    
+    "net/http"
+    "strings"
+    "regexp"
+	"fmt"
+	"io/ioutil"
 )
 
-type Config struct {
-	TelegramToken string `json:"telegramToken"`
-	LtaToken      string `json:"ltaToken"`
-	DbPath        string `json:"dbPath"`
+type UserId = int
+type Session struct {
+    CurrentScene SceneType 
 }
 
-func initConfig() Config {
-	log.Println("Initializing config...")
-	var config Config
-	ex, err := os.Executable()
-	if err != nil {
-		log.Panic(err)
-	}
-	exPath := filepath.Dir(ex)
+var (
+    GlobalBusNumRegex *regexp.Regexp
+    GlobalSessions map[UserId]*Session
+    GlobalHttpClient *http.Client
+    GlobalLtaApi *LtaApi
+)
 
-	file, err := os.Open(exPath + "/config.json")
-	if err != nil {
-		log.Panic(err)
+func PadStart(Str string, Item string, Count int) string {
+	PadAmt := Count - len(Str)
+	if PadAmt > 0 {
+		return strings.Repeat(Item, PadAmt) + Str
 	}
-	defer file.Close()
+	return Str
+}
 
-	err = json.NewDecoder(file).Decode(&config)
-	if err != nil {
-		log.Panic(err)
+func PadEnd(Str string, Item string, Count int) string {
+	PadAmount := Count - len(Str)
+	if PadAmount > 0 {
+		return Str + strings.Repeat(Item, PadAmount)
 	}
-	return config
+	return Str
+}
+
+func Panik(Format string, a ...interface{}) {
+	panic(fmt.Sprintf(Format, a...))
+}
+
+func Kalm(Bot *tg.BotAPI, Msg *tg.Message) {
+	if R := recover(); R != nil {
+		fmt.Printf("Recovered: %v\n", R)
+        NewMsg := tg.NewMessage(Msg.Chat.ID, MsgGenericFail) 
+        Bot.Send(NewMsg)
+	}
+}
+
+
+func ProcessCallback(Bot *tg.BotAPI, Query *tg.CallbackQuery) {
+    // There is only one callback for now.
+    go func() {
+        Kalm(Bot, Query.Message)
+        ProcessBusRefreshCallback(Bot, Query)
+    }()
+}
+
+func ProcessMessage(Bot *tg.BotAPI, Msg *tg.Message) {
+	User := Msg.From
+
+	// Check if session exists. If it does not, create new session
+	Sess, IsOldUser := GlobalSessions[User.ID]
+	if !IsOldUser {
+		var ok bool
+		GlobalSessions[User.ID] = &Session{}
+		Sess, ok = GlobalSessions[User.ID]
+		if !ok {
+			Panik("Cannot create session for %d", User.ID)
+		}
+	}
+
+    // Redirect based on session
+    switch Sess.CurrentScene {
+        case SceneType_Home:
+            go func() {
+                Kalm(Bot, Msg)
+                SceneHomeProcess(Sess, Bot, Msg) 
+            }()
+        case SceneType_Bus: 
+            go func() {
+                Kalm(Bot, Msg)
+                SceneBusProcess(Sess, Bot, Msg) 
+            }()
+        default:
+            Panik("Unknown scene! %d\n", Sess.CurrentScene)
+        }    
 }
 
 func main() {
-	config := initConfig()
-	db := data.NewMysqlDatabase()
-	err := db.Open("database.db")
-	defer db.Close()
-	if err != nil {
-		log.Panicf("Cannot initialize database\n%s", err.Error())
-	}
-	lta := lta.New(config.LtaToken)
-
-	repo := repos.NewRepoBusStops(db, lta)
-
-	bot := telegramBot.Bot{
-		Token: config.TelegramToken,
+    GlobalSessions = make(map[UserId]*Session)
+	TelegramToken, TelegramTokenErr := ioutil.ReadFile("TOKEN")
+	if TelegramTokenErr != nil {
+		Panik("Cannot read or find TOKEN file\n")
 	}
 
-	// stage init
-	director := director.New()
-	director.Add(
-		scenes.NewSceneMain(),
-		scenes.NewSceneBus(repo),
-	)
-	director.SetDefaultScene("Main")
-	bot.AddCallbackQueryHandler(scenes.NewBusRefreshCallbackQuery(repo))
-	bot.AddMessageHandler(director)
-	bot.Run()
+    var Err error
+    GlobalBusNumRegex, Err = regexp.Compile(`\d+`)
+    if Err != nil {
+        Panik("Cannot compile BusNumRegex")
+    }
+
+    LtaToken, LtaTokenErr := ioutil.ReadFile("LTA_TOKEN")
+	if LtaTokenErr != nil {
+		Panik("Cannot read or find LTA_TOKEN file\n")
+	}
+
+    // Lta API init
+    GlobalLtaApi = NewLtaApi(string(LtaToken))
+
+    // Get bus stops
+    if SyncErr := SyncBusStops(); SyncErr != nil {
+        Panik("Cannot get bus stop\n")
+    }
+
+    // Telegram Bot initialization
+    Bot, BotErr := tg.NewBotAPI(string(TelegramToken))
+    if BotErr != nil {
+        Panik("%v", BotErr)
+    }
+    fmt.Printf("Authorized on account %s", Bot.Self.UserName)
+    U := tg.NewUpdate(0)
+    U.Timeout = 60
+    Updates, UpdatesErr := Bot.GetUpdatesChan(U)
+    if UpdatesErr != nil {
+        Panik("%v", UpdatesErr)
+    }
+
+    for Update := range Updates {
+        if Update.CallbackQuery != nil {
+            ProcessCallback(Bot, Update.CallbackQuery)
+        } else if Update.Message != nil {
+            ProcessMessage(Bot, Update.Message)
+        }
+    }
 }
